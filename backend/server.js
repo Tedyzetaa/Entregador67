@@ -5,7 +5,7 @@ const admin = require('firebase-admin');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware CORS - CONFIGURAÇÃO SIMPLIFICADA E FUNCIONAL
+// Middleware CORS - CONFIGURAÇÃO SIMPLIFICADA
 app.use(cors({
     origin: [
         'https://garagem67.vercel.app',
@@ -21,9 +21,6 @@ app.use(cors({
 
 // Middleware para parse JSON
 app.use(express.json());
-
-// CORREÇÃO DEFINITIVA: Remover completamente as rotas OPTIONS problemáticas
-// O middleware CORS já lida com preflight automaticamente
 
 // Inicialização do Firebase
 let db = null;
@@ -371,6 +368,8 @@ app.get('/entregadores', authenticate, isAdmin, async (req, res) => {
 // Criar pedido (apenas admin)
 app.post('/pedidos', authenticate, isAdmin, async (req, res) => {
   try {
+    console.log('📥 Recebendo pedido do admin:', req.body);
+    
     const { description, quantity } = req.body;
 
     if (!description || !quantity) {
@@ -398,10 +397,12 @@ app.post('/pedidos', authenticate, isAdmin, async (req, res) => {
     if (firebaseInitialized) {
       const docRef = await db.collection('pedidos').add(novoPedido);
       resultado = { id: docRef.id, ...novoPedido };
+      console.log('✅ Pedido salvo no Firebase:', docRef.id);
     } else {
       novoPedido.id = nextPedidoId++;
       pedidos.push(novoPedido);
       resultado = novoPedido;
+      console.log('✅ Pedido salvo em memória:', novoPedido.id);
     }
 
     res.status(201).json({
