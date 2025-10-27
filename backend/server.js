@@ -5,23 +5,33 @@ const admin = require('firebase-admin');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware CORS - SUBSTITUA esta parte
+// Middleware CORS - CONFIGURAÇÃO ATUALIZADA
 app.use(cors({
     origin: [
         'https://garagem67.vercel.app',
         'https://entregador67.vercel.app',
         'http://localhost:8000',
         'http://localhost:3000',
-        'http://localhost:3001'
+        'http://localhost:3001',
+        'https://seu-site-garagem67.vercel.app' // ⭐ ADICIONE SEU DOMÍNIO REAL
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
 
-// Adicione ESTE middleware para lidar com preflight OPTIONS
-app.options('/api/external/orders', cors()); // Preflight específico
-app.options('*', cors()); // Habilita preflight para todas as rotas
+// CORREÇÃO DO ERRO: Substituir as linhas problemáticas
+app.options('/api/external/orders', cors());
+app.options('/*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).send();
+});
+
+// Middleware para parse JSON
+app.use(express.json());
 
 // Inicialização do Firebase
 let db = null;
@@ -849,6 +859,8 @@ function criarDadosExemplo() {
 app.post('/api/external/orders', async (req, res) => {
   try {
     console.log('📥 Recebendo pedido externo do Garagem67...');
+    console.log('📍 Origem da requisição:', req.headers.origin);
+    console.log('📦 Dados recebidos:', req.body);
     
     const {
       external_id,
