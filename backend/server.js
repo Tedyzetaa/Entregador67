@@ -5,33 +5,25 @@ const admin = require('firebase-admin');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware CORS - CONFIGURAÇÃO ATUALIZADA
+// Middleware CORS - CONFIGURAÇÃO SIMPLIFICADA E FUNCIONAL
 app.use(cors({
     origin: [
         'https://garagem67.vercel.app',
         'https://entregador67.vercel.app',
         'http://localhost:8000',
         'http://localhost:3000',
-        'http://localhost:3001',
-        'https://seu-site-garagem67.vercel.app' // ⭐ ADICIONE SEU DOMÍNIO REAL
+        'http://localhost:3001'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
 
-// CORREÇÃO DO ERRO: Substituir as linhas problemáticas
-app.options('/api/external/orders', cors());
-app.options('/*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.status(200).send();
-});
-
 // Middleware para parse JSON
 app.use(express.json());
+
+// CORREÇÃO DEFINITIVA: Remover completamente as rotas OPTIONS problemáticas
+// O middleware CORS já lida com preflight automaticamente
 
 // Inicialização do Firebase
 let db = null;
@@ -766,93 +758,6 @@ app.get('/', (req, res) => {
   });
 });
 
-// ==================== INICIALIZAÇÃO ====================
-
-app.listen(PORT, () => {
-  console.log('='.repeat(70));
-  console.log('🚀 ENTREGADORES 67 - SISTEMA COMPLETO v2.0');
-  console.log('='.repeat(70));
-  console.log(`📍 Servidor rodando: http://localhost:${PORT}`);
-  console.log(`❤️  Health check: http://localhost:${PORT}/health`);
-  console.log(`🔑 Register user: POST http://localhost:${PORT}/register-user`);
-  console.log(`👑 Create admin: POST http://localhost:${PORT}/admin/create-admin`);
-  console.log('='.repeat(70));
-  console.log(`⚡ Banco de dados: ${firebaseInitialized ? 'Firebase (Produção)' : 'Memória (Desenvolvimento)'}`);
-  console.log('='.repeat(70));
-  
-  // Criar dados de exemplo apenas se não estiver usando Firebase
-  if (!firebaseInitialized) {
-    criarDadosExemplo();
-  }
-});
-
-function criarDadosExemplo() {
-  // Criar admin de exemplo
-  const adminId = 'admin-exemplo';
-  users.push({
-    id: adminId,
-    email: 'admin@entregadores67.com',
-    name: 'Administrador',
-    role: 'admin',
-    profileCompleted: true,
-    createdAt: new Date().toISOString(),
-    lastLogin: new Date().toISOString()
-  });
-
-  // Criar entregador de exemplo
-  entregadores.push({
-    id: nextEntregadorId++,
-    userId: 'entregador-exemplo',
-    userEmail: 'entregador@exemplo.com',
-    nome: 'João Silva',
-    cpf: '12345678901',
-    telefone: '67999999999',
-    veiculo: 'moto',
-    endereco: 'Rua Exemplo, 123',
-    cidade: 'Ivinhema',
-    estado: 'MS',
-    cep: '79740000',
-    disponibilidade: 'flexivel',
-    possuiCnh: true,
-    cnh: '123456789',
-    status: 'aprovado',
-    verificado: true,
-    ativo: true,
-    dataCadastro: new Date().toISOString()
-  });
-
-  // Criar pedidos de exemplo
-  pedidos.push({
-    id: nextPedidoId++,
-    description: '2x Pizza Calabresa + 1x Coca-Cola 2L',
-    quantity: 1,
-    status: 'pendente',
-    createdBy: adminId,
-    createdByName: 'Administrador',
-    acceptedBy: null,
-    acceptedByName: null,
-    createdAt: new Date().toISOString(),
-    acceptedAt: null,
-    updatedAt: new Date().toISOString()
-  });
-
-  pedidos.push({
-    id: nextPedidoId++,
-    description: 'Entrega de documentos - Cartório para Prefeitura',
-    quantity: 1,
-    status: 'aceito',
-    createdBy: adminId,
-    createdByName: 'Administrador',
-    acceptedBy: 'entregador-exemplo',
-    acceptedByName: 'João Silva',
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-    acceptedAt: new Date(Date.now() - 1800000).toISOString(),
-    updatedAt: new Date().toISOString()
-  });
-
-  console.log('📋 Dados de exemplo criados para demonstração');
-}
-
 // ==================== ROTAS PARA INTEGRAÇÃO EXTERNA ====================
 
 // Endpoint para receber pedidos do Garagem67
@@ -1057,3 +962,90 @@ app.get('/api/external/orders', authenticate, isAdmin, async (req, res) => {
     });
   }
 });
+
+// ==================== INICIALIZAÇÃO ====================
+
+app.listen(PORT, () => {
+  console.log('='.repeat(70));
+  console.log('🚀 ENTREGADORES 67 - SISTEMA COMPLETO v2.0');
+  console.log('='.repeat(70));
+  console.log(`📍 Servidor rodando: http://localhost:${PORT}`);
+  console.log(`❤️  Health check: http://localhost:${PORT}/health`);
+  console.log(`🔑 Register user: POST http://localhost:${PORT}/register-user`);
+  console.log(`👑 Create admin: POST http://localhost:${PORT}/admin/create-admin`);
+  console.log('='.repeat(70));
+  console.log(`⚡ Banco de dados: ${firebaseInitialized ? 'Firebase (Produção)' : 'Memória (Desenvolvimento)'}`);
+  console.log('='.repeat(70));
+  
+  // Criar dados de exemplo apenas se não estiver usando Firebase
+  if (!firebaseInitialized) {
+    criarDadosExemplo();
+  }
+});
+
+function criarDadosExemplo() {
+  // Criar admin de exemplo
+  const adminId = 'admin-exemplo';
+  users.push({
+    id: adminId,
+    email: 'admin@entregadores67.com',
+    name: 'Administrador',
+    role: 'admin',
+    profileCompleted: true,
+    createdAt: new Date().toISOString(),
+    lastLogin: new Date().toISOString()
+  });
+
+  // Criar entregador de exemplo
+  entregadores.push({
+    id: nextEntregadorId++,
+    userId: 'entregador-exemplo',
+    userEmail: 'entregador@exemplo.com',
+    nome: 'João Silva',
+    cpf: '12345678901',
+    telefone: '67999999999',
+    veiculo: 'moto',
+    endereco: 'Rua Exemplo, 123',
+    cidade: 'Ivinhema',
+    estado: 'MS',
+    cep: '79740000',
+    disponibilidade: 'flexivel',
+    possuiCnh: true,
+    cnh: '123456789',
+    status: 'aprovado',
+    verificado: true,
+    ativo: true,
+    dataCadastro: new Date().toISOString()
+  });
+
+  // Criar pedidos de exemplo
+  pedidos.push({
+    id: nextPedidoId++,
+    description: '2x Pizza Calabresa + 1x Coca-Cola 2L',
+    quantity: 1,
+    status: 'pendente',
+    createdBy: adminId,
+    createdByName: 'Administrador',
+    acceptedBy: null,
+    acceptedByName: null,
+    createdAt: new Date().toISOString(),
+    acceptedAt: null,
+    updatedAt: new Date().toISOString()
+  });
+
+  pedidos.push({
+    id: nextPedidoId++,
+    description: 'Entrega de documentos - Cartório para Prefeitura',
+    quantity: 1,
+    status: 'aceito',
+    createdBy: adminId,
+    createdByName: 'Administrador',
+    acceptedBy: 'entregador-exemplo',
+    acceptedByName: 'João Silva',
+    createdAt: new Date(Date.now() - 3600000).toISOString(),
+    acceptedAt: new Date(Date.now() - 1800000).toISOString(),
+    updatedAt: new Date().toISOString()
+  });
+
+  console.log('📋 Dados de exemplo criados para demonstração');
+}
