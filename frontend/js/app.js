@@ -1,5 +1,5 @@
 // Configuração do backend
-const BACKEND_URL = 'http://localhost:3000';
+const BACKEND_URL = 'https://entregador67.up.railway.app';
 
 // Inicialização da aplicação
 document.addEventListener('DOMContentLoaded', function() {
