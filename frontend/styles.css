@@ -1189,3 +1189,75 @@ body {
         gap: 10px;
     }
 }
+
+/* ==================== */
+/* NOVOS ESTILOS DE NAVEGAÇÃO */
+/* ==================== */
+
+.nav-buttons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-right: 15px;
+}
+
+.btn-nav {
+    background: transparent;
+    color: #d4af37;
+    border: 2px solid #d4af37;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+}
+
+.btn-nav:hover {
+    background: #d4af37;
+    color: #0a0a0a;
+    transform: translateY(-2px);
+}
+
+.btn-admin {
+    background: #d4af37;
+    color: #0a0a0a;
+}
+
+.btn-admin:hover {
+    background: #b8941f;
+    border-color: #b8941f;
+}
+
+/* Ajustes responsivos para os botões de navegação */
+@media (max-width: 768px) {
+    .nav-buttons {
+        flex-direction: column;
+        gap: 8px;
+        margin-right: 10px;
+    }
+    
+    .btn-nav {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .user-area {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .nav-buttons {
+        margin-right: 5px;
+    }
+    
+    .btn-nav {
+        padding: 5px 10px;
+        font-size: 0.75rem;
+    }
+}

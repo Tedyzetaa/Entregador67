@@ -33,6 +33,20 @@
                     <span class="icon">🚀</span>
                     Área do Entregador
                 </button>
+                
+                <!-- Botões para usuários logados -->
+                <div id="nav-buttons" class="nav-buttons" style="display: none;">
+                    <button id="btn-pedidos" class="btn-nav">
+                        📦 Ver Pedidos
+                    </button>
+                    <button id="btn-admin" class="btn-nav btn-admin" style="display: none;">
+                        👑 Painel Admin
+                    </button>
+                    <button id="btn-criar-pedido" class="btn-nav btn-primary" style="display: none;">
+                        ➕ Criar Pedido
+                    </button>
+                </div>
+                
                 <div id="user-info" class="user-info" style="display: none;">
                     <img id="user-avatar" src="" alt="Avatar" class="user-avatar">
                     <span id="user-name" class="user-name"></span>
@@ -45,7 +59,7 @@
     <!-- Hero Section -->
     <section id="home" class="hero">
         <div class="hero-content">
-            <h2>GANHE DINHEITO FAZENDO ENTREGAS</h2>
+            <h2>GANHE DINHEIRO FAZENDO ENTREGAS</h2>
             <p>Trabalhe nos seus horários e aumente sua renda com a maior plataforma de entregas da região</p>
             <button id="hero-cadastro-btn" class="btn-primary">COMEÇAR AGORA</button>
         </div>
@@ -273,29 +287,28 @@
                     <h3>Documentos</h3>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="cnh">Número da CNH</label>
-                            <!-- Campo CNH como select Sim/Não -->
-                            <label for="possuiCnh">Possui CNH?</label>
-                                <select id="possuiCnh" name="possuiCnh" required>
+                            <label for="possuiCnh">Possui CNH? *</label>
+                            <select id="possuiCnh" name="possuiCnh" required>
                                 <option value="">Selecione</option>
                                 <option value="sim">Sim</option>
                                 <option value="nao">Não</option>
                             </select>
-
-                            <!-- Campo para número da CNH (aparece apenas se selecionar "Sim") -->
-                            <div id="cnhContainer" style="display: none;">
-                            <label for="cnh">Número da CNH:</label>
-                            <input type="text" id="cnh" name="cnh" placeholder="Digite o número da CNH">
-                            </div>
                         </div>
                         <div class="form-group">
                             <label for="veiculo">Tipo de Veículo:</label>
-                                <select id="veiculo" name="veiculo" required>
+                            <select id="veiculo" name="veiculo" required>
                                 <option value="">Selecione</option>
                                 <option value="moto">Moto</option>
                                 <option value="carro">Carro</option>
                                 <option value="bicicleta">Bicicleta</option>
                             </select>
+                        </div>
+                    </div>
+                    
+                    <div id="cnhContainer" style="display: none;">
+                        <div class="form-group">
+                            <label for="cnh">Número da CNH:</label>
+                            <input type="text" id="cnh" name="cnh" placeholder="Digite o número da CNH">
                         </div>
                     </div>
                 </div>

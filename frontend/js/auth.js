@@ -9,8 +9,7 @@ const firebaseConfig = {
     measurementId: "G-H6TN06K0XK"
 };
 
-// Backend URL - ATUALIZE COM SUA URL
-// NOVA URL - use esta:
+// Backend URL - ATUALIZE COM SUA URL DO RAILWAY
 const BACKEND_URL = 'https://entregador67-production.up.railway.app';
 
 // Inicializar Firebase
@@ -33,10 +32,17 @@ const btnEmailLogin = document.getElementById('btn-email-login');
 const cadastroForm = document.getElementById('cadastro-form');
 const btnSubmitCadastro = document.getElementById('btn-submit-cadastro');
 
+// Novos elementos de navegação
+const navButtons = document.getElementById('nav-buttons');
+const btnPedidos = document.getElementById('btn-pedidos');
+const btnAdmin = document.getElementById('btn-admin');
+const btnCriarPedido = document.getElementById('btn-criar-pedido');
+
 // Estado da aplicação
 let currentUser = null;
 let userToken = null;
-let userRole = null;
+let userRole = 'entregador';
+let userProfile = null;
 
 // Inicializar aplicação
 document.addEventListener('DOMContentLoaded', function() {
@@ -55,11 +61,14 @@ function initAuth() {
             await registerUserInBackend(user);
             await checkUserProfile();
             showUserInfo(user);
+            updateNavigationButtons();
         } else {
             currentUser = null;
             userToken = null;
-            userRole = null;
+            userRole = 'entregador';
+            userProfile = null;
             hideUserInfo();
+            hideNavigationButtons();
         }
     });
 }
@@ -67,6 +76,8 @@ function initAuth() {
 // Registrar usuário no backend após login social
 async function registerUserInBackend(user) {
     try {
+        console.log('📝 Registrando usuário no backend...');
+        
         const response = await fetch(`${BACKEND_URL}/register-user`, {
             method: 'POST',
             headers: {
@@ -76,21 +87,21 @@ async function registerUserInBackend(user) {
                 uid: user.uid,
                 email: user.email,
                 name: user.displayName || user.email.split('@')[0],
-                role: 'entregador' // Default role
+                role: 'entregador'
             })
         });
 
-        const result = await response.json();
-        
-        if (result.success) {
+        if (response.ok) {
+            const result = await response.json();
             userRole = result.user.role;
-            console.log('✅ Usuário registrado no backend:', result.user);
+            console.log('✅ Usuário registrado no backend. Role:', userRole);
             return result.user;
         } else {
-            console.error('❌ Erro ao registrar usuário:', result.message);
+            console.warn('⚠️ Erro ao registrar usuário, usando role padrão');
         }
     } catch (error) {
         console.error('❌ Erro ao conectar com backend:', error);
+        // Continua com role padrão mesmo com erro
     }
 }
 
@@ -99,13 +110,26 @@ async function checkUserProfile() {
     if (!currentUser || !userToken) return;
 
     try {
-        // Verificar se é admin
-        if (userRole === 'admin') {
-            redirectToAdmin();
+        // Tentar verificar se é admin primeiro
+        const adminTest = await fetch(`${BACKEND_URL}/entregadores`, {
+            headers: {
+                'Authorization': `Bearer ${userToken}`
+            }
+        });
+
+        if (adminTest.ok) {
+            // Se conseguiu acessar a rota admin, é admin
+            userRole = 'admin';
+            console.log('✅ Usuário é ADMIN');
             return;
         }
+    } catch (error) {
+        // Não é admin ou erro de conexão
+        console.log('👤 Usuário é ENTREGADOR ou erro de verificação');
+    }
 
-        // Verificar se já completou cadastro de entregador
+    // Se não é admin, verificar se já tem cadastro de entregador
+    try {
         const response = await fetch(`${BACKEND_URL}/entregadores`, {
             headers: {
                 'Authorization': `Bearer ${userToken}`
@@ -114,19 +138,52 @@ async function checkUserProfile() {
 
         if (response.ok) {
             const result = await response.json();
-            const userEntregador = result.data.find(e => e.userId === currentUser.uid);
+            const userEntregador = result.data ? result.data.find(e => e.userId === currentUser.uid) : null;
             
-            if (userEntregador) {
-                // Já tem cadastro completo, redirecionar para área do entregador
-                redirectToEntregador();
-            } else {
-                // Não tem cadastro, mostrar modal
+            if (!userEntregador) {
+                console.log('📝 Usuário precisa completar cadastro');
                 showCadastroModal();
+            } else {
+                userProfile = userEntregador;
+                console.log('✅ Perfil de entregador encontrado');
             }
         }
     } catch (error) {
         console.error('❌ Erro ao verificar perfil:', error);
     }
+}
+
+// Atualizar botões de navegação baseado no role
+function updateNavigationButtons() {
+    if (!currentUser) {
+        hideNavigationButtons();
+        return;
+    }
+
+    // Mostrar área de navegação
+    navButtons.style.display = 'flex';
+    
+    // Botão de Pedidos (visível para todos os usuários logados)
+    btnPedidos.style.display = 'inline-block';
+    
+    // Botões de Admin (apenas para admins)
+    if (userRole === 'admin') {
+        btnAdmin.style.display = 'inline-block';
+        btnCriarPedido.style.display = 'inline-block';
+        console.log('👑 Botões de admin mostrados');
+    } else {
+        btnAdmin.style.display = 'none';
+        btnCriarPedido.style.display = 'none';
+        console.log('📦 Apenas botão de pedidos mostrado');
+    }
+}
+
+// Esconder botões de navegação
+function hideNavigationButtons() {
+    navButtons.style.display = 'none';
+    btnPedidos.style.display = 'none';
+    btnAdmin.style.display = 'none';
+    btnCriarPedido.style.display = 'none';
 }
 
 // Inicializar event listeners
@@ -157,6 +214,23 @@ function initEventListeners() {
 
     // Formulário de cadastro
     cadastroForm.addEventListener('submit', handleCadastroSubmit);
+
+    // Botões de navegação
+    btnPedidos.addEventListener('click', () => {
+        if (userRole === 'admin') {
+            window.location.href = 'admin.html';
+        } else {
+            window.location.href = 'entregador.html';
+        }
+    });
+
+    btnAdmin.addEventListener('click', () => {
+        window.location.href = 'admin.html';
+    });
+
+    btnCriarPedido.addEventListener('click', () => {
+        window.location.href = 'admin.html#criar-pedido';
+    });
 }
 
 // Lógica do campo CNH
@@ -247,16 +321,6 @@ function hideUserInfo() {
     if (loginBtn) loginBtn.style.display = 'flex';
 }
 
-// Redirecionar para área do entregador
-function redirectToEntregador() {
-    window.location.href = 'entregador.html';
-}
-
-// Redirecionar para área admin
-function redirectToAdmin() {
-    window.location.href = 'admin.html';
-}
-
 // Envio do formulário de cadastro
 async function handleCadastroSubmit(e) {
     e.preventDefault();
@@ -327,7 +391,8 @@ async function handleCadastroSubmit(e) {
         if (result.success) {
             alert('✅ Cadastro realizado com sucesso! Aguarde a aprovação.');
             cadastroModal.style.display = 'none';
-            redirectToEntregador();
+            userProfile = result.entregador;
+            updateNavigationButtons();
         } else {
             throw new Error(result.message || 'Erro ao completar cadastro');
         }
@@ -430,3 +495,34 @@ function validarCEP(cep) {
     const cepLimpo = cep.replace(/\D/g, '');
     return cepLimpo.length === 8;
 }
+
+// Função para criar admin (executar no console quando necessário)
+window.createAdmin = function() {
+    const user = firebase.auth().currentUser;
+    if (!user) {
+        alert('Faça login primeiro!');
+        return;
+    }
+    
+    fetch(`${BACKEND_URL}/admin/create-admin`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            uid: user.uid,
+            email: user.email,
+            name: user.displayName || 'Administrador'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('✅ Admin criado:', data);
+        alert('Admin criado com sucesso! Recarregue a página.');
+        location.reload();
+    })
+    .catch(error => {
+        console.error('❌ Erro ao criar admin:', error);
+        alert('Erro ao criar admin: ' + error.message);
+    });
+};
