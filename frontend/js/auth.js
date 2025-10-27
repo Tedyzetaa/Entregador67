@@ -10,7 +10,8 @@ const firebaseConfig = {
 };
 
 // Backend URL - ATUALIZE COM SUA URL
-const BACKEND_URL = 'http://entregador67.railway.internal'; // Ou a URL do seu backend
+// NOVA URL - use esta:
+const BACKEND_URL = 'https://entregador67-production.up.railway.app';
 
 // Inicializar Firebase
 firebase.initializeApp(firebaseConfig);

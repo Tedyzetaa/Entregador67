@@ -1,5 +1,6 @@
 // Configuração do backend
-const BACKEND_URL = 'https://entregador67.railway.internal';
+// NOVA URL - use esta:
+const BACKEND_URL = 'https://entregador67-production.up.railway.app';
 
 // app.js - Funções gerais atualizadas
 

@@ -1,5 +1,6 @@
 // entregador.js - Lógica da área do entregador
-const BACKEND_URL = 'http://localhost:3000';
+// NOVA URL - use esta:
+const BACKEND_URL = 'https://entregador67-production.up.railway.app';
 
 let currentUser = null;
 let userToken = null;
