@@ -1,0 +1,2138 @@
+eu quero criar um site usando esse como base:
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyAO2fMl8KCASY_oTqX5PeHnM4ivBSOFcYQ",
+    authDomain: "entregador67-859a4.firebaseapp.com",
+    projectId: "entregador67-859a4",
+    storageBucket: "entregador67-859a4.firebasestorage.app",
+    messagingSenderId: "314820422641",
+    appId: "1:314820422641:web:12685b9bf66287a7aaf250",
+    measurementId: "G-H6TN06K0XK"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+'''''''''''''''''''
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garagem 67 - Bar e Conveniência</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/responsive.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
+    <script>
+    // CONFIGURAÇÃO COMPLETA DO FIREBASE
+    const firebaseConfig = {
+        apiKey: "AIzaSyBbgzZ21aPFHmeoeahk40eMllzEfCcI7BQ",
+        authDomain: "garagem67-c38cf.firebaseapp.com",
+        projectId: "garagem67-c38cf",
+        storageBucket: "garagem67-c38cf.appspot.com",
+        messagingSenderId: "579533283807",
+        appId: "1:579533283807:web:c8299a4f8ea67b29c07c39d", // ATUALIZE ESTE
+        measurementId: "G-XXXXXXXXXX" // ADICIONE SE TIVER
+    };
+
+    // Inicializar Firebase
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            // ✅ VERIFICAR se o Firebase já foi inicializado
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            console.log('✅ Firebase inicializado com sucesso');
+            
+        } catch (error) {
+            console.error('❌ Erro ao inicializar Firebase:', error);
+        }
+    });
+</script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                    <img src="/img/logo.png" alt="Garagem 67 - Bar e Conveniência" class="logo-image">
+            </div>
+            <nav class="nav">
+                <ul>
+                    <li><a href="#home">Início</a></li>
+                    <li><a href="#menu">Cardápio</a></li>
+                    <li><a href="#about">Sobre</a></li>
+                    <li><a href="#contact">Contato</a></li>
+                </ul>
+                
+                <div id="user-menu" class="user-menu">
+                    <div class="user-menu-item">
+                        <a href="#historico">Meus Pedidos</a>
+                    </div>
+                </div>
+            </nav>
+            <div class="user-area">
+            <!-- Botão Vire Entregador -->
+            <a href="https://wa.me/5567998668032" target="_blank" class="btn-delivery">
+                <span class="delivery-icon">🚚</span>
+                Vire Entregador
+            </a>
+            
+            <!-- Botão de Login -->
+            <button id="login-btn" class="btn-login">
+                <span class="google-icon">🚀</span>
+                Entrar
+            </button>
+            <div id="user-info" class="user-info" style="display: none;">
+                <img id="user-avatar" src="" alt="Avatar" class="user-avatar">
+                <span id="user-name" class="user-name"></span>
+                <button id="logout-btn" class="btn-logout">Sair</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Modal de Login -->
+    <div id="login-modal" class="login-modal">
+        <div class="login-content">
+            <div class="login-header">
+                <h2>ENTRAR NA GARAGEM 67</h2>
+                <span class="login-close">&times;</span>
+            </div>
+            <div class="login-body">
+                <p class="login-subtitle">Escolha como deseja fazer login</p>
+                
+                <!-- Botão Principal Único -->
+                <button id="btn-login-main" class="btn-login-main">
+                    <span class="btn-main-icon">🔐</span>
+                    <span class="btn-main-text">Fazer Login</span>
+                </button>
+
+                <!-- Opções que aparecem após clicar no botão principal -->
+                <div id="login-options" class="login-options" style="display: none;">
+                    <button id="btn-google-login" class="btn-login-option google-option">
+                        <span class="option-icon">🚗</span>
+                        <span class="option-text">Continuar com Google</span>
+                    </button>
+                    
+                    <button id="btn-email-login" class="btn-login-option email-option">
+                        <span class="option-icon">📧</span>
+                        <span class="option-text">Entrar com Email</span>
+                    </button>
+                </div>
+
+                <!-- Formulário de Email -->
+                <div id="email-login-form" class="email-login-form" style="display: none;">
+                    <div class="form-group">
+                        <input type="email" id="login-email" placeholder="Seu email" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="login-password" placeholder="Sua senha" class="form-input">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="btn-back" class="btn-back">Voltar</button>
+                        <button type="button" id="btn-email-submit" class="btn-submit">Entrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Endereço -->
+    <div id="address-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>DADOS DE ENTREGA</h2>
+            <form id="address-form" class="cadastro-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="address-nome">Nome Completo *</label>
+                        <input type="text" id="address-nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="address-telefone">Telefone/WhatsApp *</label>
+                        <input type="tel" id="address-telefone" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="address-endereco">Endereço Completo *</label>
+                    <input type="text" id="address-endereco" placeholder="Rua, número, bairro" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="address-cidade">Cidade *</label>
+                        <input type="text" id="address-cidade" value="Ivinhema" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="address-estado">Estado *</label>
+                        <select id="address-estado" required>
+                            <option value="MS" selected>Mato Grosso do Sul</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="address-cep">CEP *</label>
+                        <input type="text" id="address-cep" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="address-complemento">Complemento</label>
+                    <input type="text" id="address-complemento" placeholder="Apartamento, bloco, referência...">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Confirmar Endereço e Finalizar Pedido</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h2>EXPERIÊNCIA ÚNICA EM DRINKS</h2>
+            <p>Descubra sabores extraordinários em nosso bar sofisticado, onde cada drink é uma obra de arte</p>
+            <a href="#menu" class="btn-primary">EXPLORAR CARDÁPIO</a>
+        </div>
+    </section>
+
+    <!-- Menu Section -->
+    <section id="menu" class="menu">
+        <div class="container">
+            <h2 class="section-title">NOSSA SELEÇÃO</h2>
+            
+            <div class="menu-nav">
+                <button class="menu-tab active" data-category="bebidas">BEBIDAS</button>
+                <button class="menu-tab" data-category="comidas">ACOMPANHAMENTOS</button>
+                <button class="menu-tab" data-category="drinks">DRINKS ESPECIAIS</button>
+            </div>
+            
+            <div class="menu-items" id="menu-items-container">
+                <!-- Menu items serão carregados via JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Cart Section -->
+    <section class="cart-section">
+        <div class="container">
+            <div class="cart-container">
+                <h2>SEU PEDIDO</h2>
+                <div id="cart-items" class="cart-items">
+                    <div class="empty-cart-message">Nenhum item adicionado ao carrinho</div>
+                </div>
+                <div class="cart-total">
+                    <p>Total: <span id="cart-total">R$ 0,00</span></p>
+                </div>
+                <div class="cart-actions">
+                    <button id="clear-cart" class="btn-secondary">Limpar Carrinho</button>
+                    <button id="checkout-btn" class="btn-primary" disabled>Finalizar Pedido</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Histórico de Pedidos Section -->
+    <section id="historico" class="historico-section">
+        <div class="container">
+            <div class="historico-container">
+                <h2 class="section-title">MEUS PEDIDOS</h2>
+                <div id="historico-lista" class="historico-lista">
+                    <div class="empty-historico-message">
+                        <p>Nenhum pedido encontrado</p>
+                        <p>Faça seu primeiro pedido e acompanhe o status aqui!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="container">
+            <h2 class="section-title">NOSSA HISTÓRIA</h2>
+            <div class="about-content">
+                <div class="about-text">
+                    <p>Desde 2025, a Garagem 67 tem sido o ponto de encontro para amantes de drinks sofisticados e experiências gastronômicas únicas. Nossa missão é transformar momentos comuns em experiências extraordinárias.</p>
+                    <p>Com um ambiente aconchegante e uma equipe de bartenders especializados, criamos drinks que contam histórias e despertam sensações. Cada receita é cuidadosamente elaborada com ingredientes selecionados e técnicas apuradas.</p>
+                    <p>Nosso diferencial é a busca constante pela excelência, aliada à conveniência de um serviço de delivery 24 horas que leva nossa experiência diretamente para você.</p>
+                </div>
+                <div class="about-image"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact">
+        <div class="container">
+            <h2 class="section-title">CONTATO</h2>
+            <div class="contact-info">
+                <div class="contact-item">
+                    <h3>ENDEREÇO</h3>
+                    <p>Rua André Molina, 145 - Piravevê, Ivinhema - MS, 79740-000</p>
+                </div>
+                <div class="contact-item">
+                    <h3>TELEFONE & WHATSAPP</h3>
+                    <p>(67) 99866-8032</p>
+                </div>
+                <div class="contact-item">
+                    <h3>HORÁRIO DE FUNCIONAMENTO</h3>
+                    <p>Delivery - 24 horas<br>Bar - 16h às 02h</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Garagem 67 Bar e Conveniência. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/menu.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/orders.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
+'''''''''''''''''''''''
+/* Reset e estilos gerais */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Oswald', sans-serif;
+}
+
+body {
+    background-color: #0a0a0a;
+    color: #f5f5f5;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Header */
+.header {
+    background-color: rgba(10, 10, 10, 0.9);
+    color: #f5f5f5;
+    padding: 15px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.5);
+    border-bottom: 1px solid #333;
+}
+
+.header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.logo h1 {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 2.2rem;
+    color: #d4af37;
+    letter-spacing: 3px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.logo p {
+    font-size: 0.7rem;
+    color: #aaa;
+    text-align: left;
+    letter-spacing: 1px;
+}
+
+.nav ul {
+    display: flex;
+    list-style: none;
+    align-items: center;
+}
+
+.nav li {
+    margin: 0 15px;
+}
+
+.nav a {
+    color: #f5f5f5;
+    text-decoration: none;
+    font-weight: 700;
+    text-transform: uppercase;
+    transition: color 0.3s;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+}
+
+.nav a:hover {
+    color: #d4af37;
+}
+
+.user-menu {
+    display: none;
+    margin-left: 20px;
+}
+
+.user-menu.visible {
+    display: flex;
+}
+
+.user-menu-item {
+    margin: 0 10px;
+}
+
+.user-area {
+    display: flex;
+    align-items: center;
+}
+
+.btn-login {
+    background-color: #d4af37;
+    color: #0a0a0a;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s;
+    font-weight: bold;
+}
+
+.btn-login:hover {
+    background-color: #b8941f;
+    transform: translateY(-2px);
+}
+
+/* Botão Vire Entregador */
+.btn-delivery {
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s;
+    font-weight: bold;
+    text-decoration: none;
+    margin-right: 10px;
+    font-size: 0.9rem;
+}
+
+.btn-delivery:hover {
+    background: linear-gradient(135deg, #219653 0%, #27ae60 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+    color: white;
+    text-decoration: none;
+}
+
+.delivery-icon {
+    margin-right: 8px;
+    font-size: 1rem;
+}
+
+/* Ajuste responsivo para mobile */
+@media (max-width: 768px) {
+    .btn-delivery {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        margin-right: 8px;
+    }
+    
+    .delivery-icon {
+        margin-right: 6px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .user-area {
+        display: flex;
+        align-items: center;
+    }
+    
+    .btn-delivery {
+        padding: 5px 10px;
+        font-size: 0.75rem;
+        margin-right: 5px;
+    }
+    
+    .btn-delivery span.delivery-icon {
+        margin-right: 4px;
+    }
+}
+
+.google-icon {
+    margin-right: 8px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+}
+
+.user-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 10px;
+    border: 2px solid #d4af37;
+}
+
+.user-name {
+    margin-right: 10px;
+}
+
+.btn-logout {
+    background-color: #7f8c8d;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Logo Styles */
+.logo-image {
+    height: 60px; /* Altura ideal para o header */
+    width: auto;
+    object-fit: contain;
+    transition: all 0.3s ease;
+}
+
+/* Ajuste responsivo para mobile */
+@media (max-width: 768px) {
+    .logo-image {
+        height: 50px; /* Um pouco menor em mobile */
+    }
+}
+
+@media (max-width: 480px) {
+    .logo-image {
+        height: 45px; /* Ainda menor em telas muito pequenas */
+    }
+}
+
+/* Modal de Login */
+.login-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.8);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-content {
+    background: #111;
+    padding: 40px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    position: relative;
+    border: 1px solid #333;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    text-align: center;
+}
+
+.login-content h2 {
+    color: #d4af37;
+    margin-bottom: 20px;
+    font-family: 'Bebas Neue', cursive;
+    font-size: 2.5rem;
+    letter-spacing: 2px;
+}
+
+.login-content p {
+    margin-bottom: 25px;
+    color: #aaa;
+}
+
+.btn-login-google {
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 15px;
+    transition: background-color 0.3s;
+}
+
+.btn-login-google:hover {
+    background-color: #357ae8;
+}
+
+.btn-login-email {
+    background-color: #d4af37;
+    color: #0a0a0a;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    width: 100%;
+    margin-bottom: 15px;
+    transition: background-color 0.3s;
+}
+
+.btn-login-email:hover {
+    background-color: #b8941f;
+}
+
+.login-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #d4af37;
+}
+
+/* Formulário de Login com Email */
+.email-login-form {
+    display: none;
+    text-align: left;
+}
+
+.email-login-form.active {
+    display: block;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #ddd;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    background-color: #222;
+    color: #f5f5f5;
+    font-size: 1rem;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #d4af37;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-back {
+    background-color: #333;
+    color: #f5f5f5;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    flex: 1;
+}
+
+.btn-submit {
+    background-color: #d4af37;
+    color: #0a0a0a;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    flex: 2;
+}
+
+/* Hero Section */
+.hero {
+    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1536935338788-846bb998e3d3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
+    background-size: cover;
+    background-position: center;
+    height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: white;
+    position: relative;
+}
+
+.hero-content h2 {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 5rem;
+    letter-spacing: 5px;
+    margin-bottom: 20px;
+    text-shadow: 3px 3px 6px rgba(0,0,0,0.7);
+    color: #d4af37;
+}
+
+.hero-content p {
+    font-size: 1.5rem;
+    margin-bottom: 30px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.btn-primary {
+    background-color: #d4af37;
+    color: #0a0a0a;
+    padding: 12px 30px;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+    transition: all 0.3s;
+    display: inline-block;
+    letter-spacing: 1px;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    background-color: #b8941f;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+/* Menu Section */
+.menu {
+    padding: 100px 0;
+    background-color: #111;
+    position: relative;
+}
+
+.menu::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.1;
+    z-index: 0;
+}
+
+.menu .container {
+    position: relative;
+    z-index: 1;
+}
+
+.section-title {
+    text-align: center;
+    font-family: 'Bebas Neue', cursive;
+    font-size: 3.5rem;
+    letter-spacing: 3px;
+    margin-bottom: 50px;
+    color: #d4af37;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.menu-nav {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 50px;
+}
+
+.menu-tab {
+    background: none;
+    border: none;
+    padding: 12px 25px;
+    margin: 0 10px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s;
+    color: #f5f5f5;
+    letter-spacing: 1px;
+}
+
+.menu-tab.active {
+    color: #d4af37;
+    border-bottom: 3px solid #d4af37;
+}
+
+.menu-tab:hover:not(.active) {
+    color: #d4af37;
+}
+
+.menu-category {
+    display: none;
+}
+
+.menu-category.active {
+    display: block;
+}
+
+.menu-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 25px 0;
+    border-bottom: 1px solid #333;
+    transition: all 0.3s;
+}
+
+.menu-item:hover {
+    background-color: rgba(255,255,255,0.05);
+    padding-left: 15px;
+    padding-right: 15px;
+    border-radius: 5px;
+}
+
+.item-info {
+    flex: 1;
+}
+
+.item-info h3 {
+    font-size: 1.5rem;
+    color: #f5f5f5;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+}
+
+.item-info p {
+    color: #aaa;
+    margin-bottom: 8px;
+    font-style: italic;
+}
+
+.price {
+    font-weight: bold;
+    color: #d4af37;
+    font-size: 1.3rem;
+}
+
+.item-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.quantity-selector {
+    display: flex;
+    align-items: center;
+    border: 1px solid #444;
+    border-radius: 4px;
+    overflow: hidden;
+    background-color: #222;
+}
+
+.qty-btn {
+    background-color: #333;
+    border: none;
+    width: 35px;
+    height: 35px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+    color: #f5f5f5;
+}
+
+.qty-btn:hover {
+    background-color: #444;
+}
+
+.qty-input {
+    width: 45px;
+    height: 35px;
+    text-align: center;
+    border: none;
+    border-left: 1px solid #444;
+    border-right: 1px solid #444;
+    background-color: #222;
+    color: #f5f5f5;
+}
+
+.btn-add {
+    background-color: #d4af37;
+    color: #0a0a0a;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s;
+    letter-spacing: 1px;
+}
+
+.btn-add:hover {
+    background-color: #b8941f;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+/* Cart Section */
+.cart-section {
+    padding: 80px 0;
+    background-color: #0a0a0a;
+    border-top: 1px solid #333;
+    border-bottom: 1px solid #333;
+}
+
+.cart-container {
+    background: #111;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+    border: 1px solid #333;
+}
+
+.cart-container h2 {
+    margin-bottom: 25px;
+    color: #d4af37;
+    font-family: 'Bebas Neue', cursive;
+    font-size: 2.8rem;
+    letter-spacing: 2px;
+    text-align: center;
+}
+
+.cart-items {
+    margin-bottom: 25px;
+    min-height: 100px;
+}
+
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #333;
+}
+
+.cart-item-info h4 {
+    margin-bottom: 5px;
+    color: #f5f5f5;
+}
+
+.cart-item-info p {
+    color: #aaa;
+}
+
+.cart-item-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cart-item-controls button {
+    background-color: #333;
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.btn-remove {
+    background-color: #8B0000;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background-color 0.3s;
+}
+
+.btn-remove:hover {
+    background-color: #A52A2A;
+}
+
+.cart-total {
+    text-align: right;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 25px 0;
+    padding-top: 15px;
+    border-top: 2px solid #333;
+    color: #d4af37;
+}
+
+.cart-actions {
+    display: flex;
+    justify-content: space-between;
+}
+
+.btn-secondary {
+    background-color: #333;
+    color: #f5f5f5;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.btn-secondary:hover {
+    background-color: #444;
+    transform: translateY(-2px);
+}
+
+.empty-cart-message {
+    text-align: center;
+    color: #777;
+    font-style: italic;
+    padding: 30px 0;
+}
+
+/* Cadastro Section */
+.cadastro-section {
+    padding: 80px 0;
+    background-color: #111;
+    border-top: 1px solid #333;
+}
+
+.cadastro-container {
+    background: #0a0a0a;
+    padding: 40px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+}
+
+.cadastro-form {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+.cadastro-form .form-group label {
+    color: #d4af37;
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.cadastro-form .form-group input,
+.cadastro-form .form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    background-color: #222;
+    color: #f5f5f5;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.cadastro-form .form-group input:focus,
+.cadastro-form .form-group select:focus {
+    outline: none;
+    border-color: #d4af37;
+}
+
+.cadastro-form .form-actions {
+    text-align: center;
+    margin-top: 30px;
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+/* Histórico Section */
+.historico-section {
+    padding: 80px 0;
+    background-color: #0a0a0a;
+    border-top: 1px solid #333;
+}
+
+.historico-container {
+    background: #111;
+    padding: 40px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+}
+
+.historico-lista {
+    min-height: 200px;
+}
+
+.pedido-card {
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 20px;
+    transition: all 0.3s;
+}
+
+.pedido-card:hover {
+    border-color: #d4af37;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(212, 175, 55, 0.1);
+}
+
+.pedido-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #333;
+}
+
+.pedido-info h3 {
+    color: #d4af37;
+    margin-bottom: 5px;
+    font-size: 1.3rem;
+}
+
+.pedido-info .pedido-data {
+    color: #aaa;
+    font-size: 0.9rem;
+}
+
+.pedido-status {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-pendente {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    border: 1px solid #ffc107;
+}
+
+.status-confirmado {
+    background: rgba(0, 123, 255, 0.2);
+    color: #007bff;
+    border: 1px solid #007bff;
+}
+
+.status-preparando {
+    background: rgba(255, 165, 0, 0.2);
+    color: #ffa500;
+    border: 1px solid #ffa500;
+}
+
+.status-entrega {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+    border: 1px solid #28a745;
+}
+
+.status-entregue {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+    border: 1px solid #28a745;
+}
+
+.status-cancelado {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+    border: 1px solid #dc3545;
+}
+
+.pedido-detalhes {
+    margin-bottom: 15px;
+}
+
+.pedido-endereco {
+    color: #aaa;
+    margin-bottom: 10px;
+    font-style: italic;
+}
+
+.pedido-itens {
+    margin-bottom: 15px;
+}
+
+.pedido-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid #222;
+}
+
+.pedido-item:last-child {
+    border-bottom: none;
+}
+
+.pedido-total {
+    text-align: right;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #d4af37;
+    padding-top: 15px;
+    border-top: 2px solid #333;
+}
+
+.empty-historico-message {
+    text-align: center;
+    color: #777;
+    padding: 60px 20px;
+}
+
+.empty-historico-message p {
+    margin-bottom: 10px;
+}
+
+/* About Section */
+.about {
+    padding: 100px 0;
+    background-color: #111;
+    position: relative;
+}
+
+.about::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.1;
+    z-index: 0;
+}
+
+.about .container {
+    position: relative;
+    z-index: 1;
+}
+
+.about-content {
+    display: flex;
+    align-items: center;
+    gap: 50px;
+}
+
+.about-text {
+    flex: 1;
+}
+
+.about-text p {
+    margin-bottom: 25px;
+    font-size: 1.2rem;
+    line-height: 1.8;
+    color: #ddd;
+}
+
+.about-image {
+    flex: 1;
+    height: 400px;
+    background-color: #222;
+    border-radius: 8px;
+    background-image: url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+/* Contact Section */
+.contact {
+    padding: 100px 0;
+    background-color: #0a0a0a;
+    border-top: 1px solid #333;
+}
+
+.contact .section-title {
+    color: #d4af37;
+}
+
+.contact-info {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+}
+
+.contact-item {
+    text-align: center;
+    margin: 20px;
+    flex: 1;
+    min-width: 250px;
+    padding: 30px 20px;
+    background-color: #111;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    border: 1px solid #333;
+    transition: transform 0.3s;
+}
+
+.contact-item:hover {
+    transform: translateY(-5px);
+}
+
+.contact-item h3 {
+    color: #d4af37;
+    margin-bottom: 15px;
+    font-size: 1.5rem;
+    letter-spacing: 1px;
+}
+
+.contact-item p {
+    color: #ddd;
+}
+
+/* Footer */
+.footer {
+    background-color: #050505;
+    color: #777;
+    text-align: center;
+    padding: 30px 0;
+    border-top: 1px solid #333;
+}
+
+/* Modal de Checkout */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.8);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: #111;
+    padding: 40px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 50px;
+    position: relative;
+    border: 1px solid #333;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #d4af37;
+}
+
+.modal-content h2 {
+    color: #d4af37;
+    margin-bottom: 20px;
+    text-align: center;
+    font-family: 'Bebas Neue', cursive;
+    font-size: 2.5rem;
+    letter-spacing: 2px;
+}
+
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    background-color: #222;
+    color: #f5f5f5;
+    font-size: 1rem;
+}
+
+.form-group textarea:focus {
+    outline: none;
+    border-color: #d4af37;
+}
+
+.modal .form-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 25px;
+}
+
+/* Notificações */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #8b4513;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 5px;
+    z-index: 1001;
+    font-family: 'Oswald', sans-serif;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transform: translateX(400px);
+    transition: transform 0.3s ease;
+}
+/* Modal de Login Simplificado */
+/* Versão Minimalista */
+.login-body {
+    padding: 50px 30px;
+}
+
+.login-simple {
+    text-align: center;
+}
+
+/* Botão Principal de Login no Modal */
+.btn-login-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 18px 25px;
+    border: 2px solid #d4af37;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #d4af37 0%, #e6c04c 100%);
+    color: #1a1a1a;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+}
+
+.btn-login-main:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(212, 175, 55, 0.4);
+    background: linear-gradient(135deg, #e6c04c 0%, #f0d675 100%);
+}
+
+.btn-main-icon {
+    font-size: 1.4rem;
+    margin-right: 12px;
+}
+
+.btn-main-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 1.5px;
+}
+
+/* Opções de Login */
+.login-options {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+    animation: slideDown 0.3s ease;
+}
+
+.btn-login-option {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 15px 20px;
+    border: 2px solid #333;
+    border-radius: 10px;
+    background: transparent;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.btn-login-option:hover {
+    transform: translateY(-2px);
+    border-color: #d4af37;
+    background: rgba(212, 175, 55, 0.1);
+    box-shadow: 0 5px 15px rgba(212, 175, 55, 0.2);
+}
+
+.google-option:hover {
+    border-color: #4285f4;
+    background: rgba(66, 133, 244, 0.1);
+}
+
+.email-option:hover {
+    border-color: #d4af37;
+    background: rgba(212, 175, 55, 0.1);
+}
+
+.option-icon {
+    font-size: 1.2rem;
+    margin-right: 12px;
+    width: 24px;
+    text-align: center;
+}
+
+.option-text {
+    flex: 1;
+    text-align: center;
+}
+
+/* Animações */
+@keyframes slideDown {
+    from { 
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    from { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to { 
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+
+/* Estados dos elementos */
+.btn-login-main.hidden {
+    display: none;
+}
+
+.login-options.visible {
+    display: flex;
+}
+
+.email-login-form.visible {
+    display: block;
+}
+/* Modal de Endereço - Layout Corrigido */
+#address-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.8);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+#address-modal .modal-content {
+    background: #111;
+    padding: 40px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    border: 2px solid #d4af37;
+    box-shadow: 0 15px 40px rgba(212, 175, 55, 0.3);
+    margin: 0 auto;
+}
+
+#address-modal .close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 2rem;
+    cursor: pointer;
+    color: #d4af37;
+    background: none;
+    border: none;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+#address-modal .close:hover {
+    background-color: rgba(212, 175, 55, 0.1);
+    transform: scale(1.1);
+}
+
+#address-modal h2 {
+    color: #d4af37;
+    text-align: center;
+    margin-bottom: 30px;
+    font-family: 'Bebas Neue', cursive;
+    font-size: 2.5rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    border-bottom: 2px solid #333;
+    padding-bottom: 15px;
+}
+
+/* Formulário de Endereço */
+#address-modal .cadastro-form {
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+#address-modal .form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+#address-modal .form-row .form-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+#address-modal .form-group {
+    margin-bottom: 20px;
+}
+
+#address-modal .form-group label {
+    display: block;
+    color: #d4af37;
+    font-weight: 700;
+    margin-bottom: 8px;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#address-modal .form-group input,
+#address-modal .form-group select {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid #333;
+    border-radius: 8px;
+    background-color: #1a1a1a;
+    color: #f5f5f5;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+#address-modal .form-group input:focus,
+#address-modal .form-group select:focus {
+    outline: none;
+    border-color: #d4af37;
+    background-color: #222;
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+}
+
+#address-modal .form-group input::placeholder {
+    color: #666;
+}
+
+/* Botão de Envio */
+#address-modal .form-actions {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #333;
+}
+
+#address-modal .btn-primary {
+    background: linear-gradient(135deg, #d4af37 0%, #e6c04c 100%);
+    color: #1a1a1a;
+    border: none;
+    padding: 16px 40px;
+    border-radius: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1.1rem;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    display: block;
+}
+
+#address-modal .btn-primary:hover {
+    background: linear-gradient(135deg, #e6c04c 0%, #f0d675 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(212, 175, 55, 0.4);
+}
+
+#address-modal .btn-primary:active {
+    transform: translateY(-1px);
+}
+
+/* Responsividade para Mobile */
+@media (max-width: 768px) {
+    #address-modal {
+        padding: 10px;
+    }
+    
+    #address-modal .modal-content {
+        padding: 30px 20px;
+        margin: 10px;
+        max-height: 95vh;
+    }
+    
+    #address-modal h2 {
+        font-size: 2rem;
+        margin-bottom: 20px;
+    }
+    
+    #address-modal .form-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    #address-modal .form-row .form-group {
+        min-width: 100%;
+    }
+    
+    #address-modal .form-group input,
+    #address-modal .form-group select {
+        padding: 12px 14px;
+    }
+    
+    #address-modal .btn-primary {
+        padding: 14px 30px;
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    #address-modal .modal-content {
+        padding: 25px 15px;
+    }
+    
+    #address-modal h2 {
+        font-size: 1.8rem;
+    }
+    
+    #address-modal .close {
+        top: 10px;
+        right: 15px;
+        font-size: 1.8rem;
+    }
+}
+
+/* Animações */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+#address-modal .modal-content {
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+/* Estados de Validação */
+#address-modal .form-group input:invalid:not(:focus):not(:placeholder-shown) {
+    border-color: #e74c3c;
+    background-color: rgba(231, 76, 60, 0.1);
+}
+
+#address-modal .form-group input:valid:not(:focus):not(:placeholder-shown) {
+    border-color: #27ae60;
+    background-color: rgba(39, 174, 96, 0.1);
+}
+
+/* Loading State */
+#address-modal .btn-primary.loading {
+    position: relative;
+    color: transparent;
+}
+
+#address-modal .btn-primary.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid transparent;
+    border-top: 2px solid #1a1a1a;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Estilos para as imagens dos produtos no cardápio */
+.menu-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 25px 0;
+    border-bottom: 1px solid #333;
+    transition: all 0.3s;
+}
+
+.item-image {
+    flex: 0 0 100px;
+    height: 100px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid #333;
+    transition: all 0.3s ease;
+}
+
+.item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.menu-item:hover .item-image {
+    border-color: #d4af37;
+}
+
+.menu-item:hover .item-image img {
+    transform: scale(1.05);
+}
+
+.item-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.item-info {
+    flex: 1;
+}
+
+.item-info h3 {
+    font-size: 1.5rem;
+    color: #f5f5f5;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+}
+
+.item-info p {
+    color: #aaa;
+    margin-bottom: 8px;
+    font-style: italic;
+    line-height: 1.4;
+}
+
+.price {
+    font-weight: bold;
+    color: #d4af37;
+    font-size: 1.3rem;
+}
+
+.item-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Responsividade para imagens */
+@media (max-width: 768px) {
+    .menu-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+    }
+    
+    .item-image {
+        flex: 0 0 120px;
+        height: 120px;
+        margin: 0 auto;
+    }
+    
+    .item-controls {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .item-image {
+        flex: 0 0 100px;
+        height: 100px;
+    }
+    
+    .item-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+/* Estilos para as imagens dos produtos no cardápio */
+.menu-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 25px 0;
+    border-bottom: 1px solid #333;
+    transition: all 0.3s;
+}
+
+.item-image {
+    flex: 0 0 140px;
+    height: 140px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid #333;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.menu-item:hover .item-image {
+    border-color: #d4af37;
+}
+
+.menu-item:hover .item-image img {
+    transform: scale(1.05);
+}
+
+.item-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.item-info {
+    flex: 1;
+}
+
+.item-info h3 {
+    font-size: 1.5rem;
+    color: #f5f5f5;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+}
+
+.item-info p {
+    color: #aaa;
+    margin-bottom: 8px;
+    font-style: italic;
+    line-height: 1.4;
+}
+
+.price {
+    font-weight: bold;
+    color: #d4af37;
+    font-size: 1.3rem;
+}
+
+.item-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.quantity-selector {
+    display: flex;
+    align-items: center;
+    border: 1px solid #444;
+    border-radius: 4px;
+    overflow: hidden;
+    background-color: #222;
+}
+
+.qty-btn {
+    background-color: #333;
+    border: none;
+    width: 35px;
+    height: 35px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+    color: #f5f5f5;
+}
+
+.qty-btn:hover {
+    background-color: #444;
+}
+
+.qty-input {
+    width: 45px;
+    height: 35px;
+    text-align: center;
+    border: none;
+    border-left: 1px solid #444;
+    border-right: 1px solid #444;
+    background-color: #222;
+    color: #f5f5f5;
+}
+
+.btn-add {
+    background-color: #d4af37;
+    color: #0a0a0a;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s;
+    letter-spacing: 1px;
+}
+
+.btn-add:hover {
+    background-color: #b8941f;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+/* Responsividade para imagens */
+@media (max-width: 768px) {
+    .menu-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+    }
+    
+    .item-image {
+        flex: 0 0 160px;
+        height: 160px;
+        margin: 0 auto;
+    }
+    
+    .item-controls {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .item-image {
+        flex: 0 0 140px;
+        height: 140px;
+    }
+    
+    .item-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+'''''''''''''''''''''
+note que na pagina tem um botão, que manda para um whatsapp, em breve, esse site que iremos criar, ira ser o link que ira substituir o whatsapp, mantenha a mesma vibe do projeto original, o site tem que ser assim:
+
+Um site completo de cadastro de entregadores de pedidos, chamado Entregadores 67, com frontend e backend separados, hospedados em plataformas diferentes. O backend deve se conectar à API do Firebase para armazenar os dados.
+🖥️ Frontend:
+- Desenvolvido em HTML puro
+- Interface simples, responsiva e amigável
+- Formulário de cadastro com os seguintes campos:
+- Nome completo
+- CPF
+- Telefone
+- Endereço
+- Tipo de veículo (moto, bicicleta, carro)
+- Disponibilidade de horário
+- Botão de envio que envia os dados via fetch API para o backend
+- Hospedado na Vercel
+⚙️ Backend:
+- Desenvolvido em Python (Flask) ou JavaScript (Node.js) — escolha a melhor abordagem
+- Expõe uma API REST com endpoint /cadastro que recebe os dados via POST
+- Valida os dados recebidos (ex: CPF válido, telefone com DDD)
+- Conecta-se à API do Firebase para armazenar os dados dos entregadores
+- Hospedado na Railway
+☁️ Firebase:
+- Utilizar o Firebase Realtime Database ou Firestore
+- Autenticação via chave de API
+- Criar estrutura de dados organizada por entregador
+📦 Extras:
+- Incluir instruções de deploy para Railway e Vercel
+- Gerar arquivos separados para frontend e backend
+- Criar um README com instruções de uso e configuração do Firebase
+'''''''''''''''''''''
+aqui esta as keys, elas são publicas e para teste, então pode incluir elas no codigo
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyAO2fMl8KCASY_oTqX5PeHnM4ivBSOFcYQ",
+    authDomain: "entregador67-859a4.firebaseapp.com",
+    projectId: "entregador67-859a4",
+    storageBucket: "entregador67-859a4.firebasestorage.app",
+    messagingSenderId: "314820422641",
+    appId: "1:314820422641:web:12685b9bf66287a7aaf250",
+    measurementId: "G-H6TN06K0XK"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+''''''''''''''''''''''''''''''''''''''''

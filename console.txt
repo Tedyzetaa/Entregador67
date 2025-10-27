@@ -1,0 +1,12 @@
+# Criar ambiente conda
+conda create -n entregadores67 python=3.9 nodejs -y
+
+# Ativar o ambiente
+    conda activate entregadores67
+
+# Verificar instalações
+python --version
+node --version
+npm --version
+
+cd c:\entregador67

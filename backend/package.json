@@ -1,0 +1,23 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "Backend para o sistema Entregadores67",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "firebase-admin": "^11.11.0"
+  },
+  "keywords": [
+    "entregadores",
+    "delivery",
+    "api"
+  ],
+  "author": "Entregadores67",
+  "license": "MIT"
+}
