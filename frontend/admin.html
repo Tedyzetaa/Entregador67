@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin - Entregadores 67</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <h1>ENTREGADORES 67</h1>
+                <p>Painel Administrativo</p>
+            </div>
+            <nav class="nav">
+                <ul>
+                    <li><a href="index.html">Início</a></li>
+                    <li><a href="#criar-pedido">Criar Pedido</a></li>
+                    <li><a href="#gerenciar-pedidos">Gerenciar Pedidos</a></li>
+                    <li><a href="#entregadores">Entregadores</a></li>
+                </ul>
+            </nav>
+            <div class="user-area">
+                <div id="user-info" class="user-info">
+                    <img id="user-avatar" src="" alt="Avatar" class="user-avatar">
+                    <span id="user-name" class="user-name"></span>
+                    <button id="logout-btn" class="btn-logout">Sair</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-content">
+        <!-- Criar Pedido -->
+        <section id="criar-pedido" class="criar-pedido-section">
+            <div class="container">
+                <h2 class="section-title">CRIAR NOVO PEDIDO</h2>
+                <form id="form-criar-pedido" class="form-criar-pedido">
+                    <div class="form-group">
+                        <label for="descricao">Descrição do Pedido *</label>
+                        <textarea id="descricao" name="descricao" required placeholder="Ex: 2x Pizza Calabresa, 1x Coca-Cola 2L..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="quantidade">Quantidade *</label>
+                        <input type="number" id="quantidade" name="quantidade" min="1" value="1" required>
+                    </div>
+                    <button type="submit" class="btn-primary" id="btn-criar-pedido">
+                        📦 CRIAR PEDIDO
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Gerenciar Pedidos -->
+        <section id="gerenciar-pedidos" class="gerenciar-pedidos-section">
+            <div class="container">
+                <h2 class="section-title">GERENCIAR PEDIDOS</h2>
+                <div class="pedidos-filtros">
+                    <button class="btn-filter active" data-status="todos">Todos</button>
+                    <button class="btn-filter" data-status="pendente">Pendentes</button>
+                    <button class="btn-filter" data-status="aceito">Aceitos</button>
+                    <button class="btn-filter" data-status="entregue">Entregues</button>
+                </div>
+                <div id="lista-pedidos-admin" class="lista-pedidos">
+                    <!-- Pedidos serão carregados aqui -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Gerenciar Entregadores -->
+        <section id="entregadores" class="entregadores-section">
+            <div class="container">
+                <h2 class="section-title">GERENCIAR ENTREGADORES</h2>
+                <div id="lista-entregadores" class="lista-entregadores">
+                    <!-- Entregadores serão carregados aqui -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Entregadores 67. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/auth.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

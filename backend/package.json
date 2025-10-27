@@ -1,7 +1,7 @@
 {
-  "name": "backend",
-  "version": "1.0.0",
-  "description": "Backend para o sistema Entregadores67",
+  "name": "backend-entregadores67",
+  "version": "2.0.0",
+  "description": "Backend completo para o sistema Entregadores67 com autenticação e admin",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -16,7 +16,9 @@
   "keywords": [
     "entregadores",
     "delivery",
-    "api"
+    "api",
+    "firebase",
+    "admin"
   ],
   "author": "Entregadores67",
   "license": "MIT"

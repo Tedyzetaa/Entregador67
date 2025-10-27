@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Área do Entregador - Entregadores 67</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <h1>ENTREGADORES 67</h1>
+                <p>Área do Entregador</p>
+            </div>
+            <nav class="nav">
+                <ul>
+                    <li><a href="index.html">Início</a></li>
+                    <li><a href="#pedidos">Pedidos</a></li>
+                    <li><a href="#meus-pedidos">Meus Pedidos</a></li>
+                </ul>
+            </nav>
+            <div class="user-area">
+                <div id="user-info" class="user-info">
+                    <img id="user-avatar" src="" alt="Avatar" class="user-avatar">
+                    <span id="user-name" class="user-name"></span>
+                    <button id="logout-btn" class="btn-logout">Sair</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-content">
+        <!-- Seção de Pedidos Disponíveis -->
+        <section id="pedidos" class="pedidos-section">
+            <div class="container">
+                <h2 class="section-title">PEDIDOS DISPONÍVEIS</h2>
+                <div class="pedidos-header">
+                    <div class="pedidos-info">
+                        <span id="total-pedidos">0 pedidos disponíveis</span>
+                        <button id="btn-atualizar" class="btn-secondary">🔄 Atualizar</button>
+                    </div>
+                </div>
+                <div id="lista-pedidos" class="lista-pedidos">
+                    <!-- Pedidos serão carregados aqui -->
+                </div>
+                <div id="sem-pedidos" class="sem-pedidos" style="display: none;">
+                    <p>🎉 Nenhum pedido disponível no momento!</p>
+                    <p>Volte mais tarde para novos pedidos.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Seção de Meus Pedidos -->
+        <section id="meus-pedidos" class="meus-pedidos-section">
+            <div class="container">
+                <h2 class="section-title">MEUS PEDIDOS</h2>
+                <div id="lista-meus-pedidos" class="lista-pedidos">
+                    <!-- Pedidos aceitos serão carregados aqui -->
+                </div>
+                <div id="sem-meus-pedidos" class="sem-pedidos" style="display: none;">
+                    <p>📝 Você ainda não aceitou nenhum pedido.</p>
+                    <p>Aceite um pedido acima para começar!</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Entregadores 67. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- Modal de Confirmação -->
+    <div id="confirmacao-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Confirmar Aceitação</h2>
+            <p id="confirmacao-texto">Tem certeza que deseja aceitar este pedido?</p>
+            <div class="modal-actions">
+                <button id="btn-confirmar-aceitar" class="btn-primary">Sim, Aceitar Pedido</button>
+                <button id="btn-cancelar-aceitar" class="btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/auth.js"></script>
+    <script src="js/entregador.js"></script>
+</body>
+</html>

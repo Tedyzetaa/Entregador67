@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const admin = require('firebase-admin');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,12 +14,8 @@ let db = null;
 let firebaseInitialized = false;
 
 try {
-  const admin = require('firebase-admin');
-  
-  // Verificar se o arquivo de configuração existe
   const serviceAccount = require('./firebase-config.json');
   
-  // Inicializar Firebase Admin
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
   });
@@ -33,11 +30,63 @@ try {
   firebaseInitialized = false;
 }
 
-// Dados em memória (apenas como fallback)
+// Dados em memória (fallback)
+let users = [];
+let nextUserId = 1;
 let entregadores = [];
 let nextEntregadorId = 1;
 let pedidos = [];
 let nextPedidoId = 1;
+
+// ==================== MIDDLEWARES ====================
+
+// Middleware de autenticação
+const authenticate = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split('Bearer ')[1];
+    
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token de autenticação não fornecido'
+      });
+    }
+
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    req.user = decodedToken;
+    
+    // Buscar informações adicionais do usuário no Firestore
+    if (firebaseInitialized) {
+      const userDoc = await db.collection('users').doc(decodedToken.uid).get();
+      if (userDoc.exists) {
+        req.user.role = userDoc.data().role || 'entregador';
+        req.user.profileCompleted = userDoc.data().profileCompleted || false;
+      }
+    }
+    
+    next();
+  } catch (error) {
+    console.error('❌ Erro na autenticação:', error);
+    res.status(401).json({
+      success: false,
+      message: 'Token inválido ou expirado'
+    });
+  }
+};
+
+// Middleware para verificar se é admin
+const isAdmin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403).json({
+      success: false,
+      message: 'Acesso negado. Requer privilégios de administrador.'
+    });
+  }
+};
+
+// ==================== ROTAS DE AUTENTICAÇÃO E USUÁRIOS ====================
 
 // Health Check
 app.get('/health', async (req, res) => {
@@ -46,7 +95,6 @@ app.get('/health', async (req, res) => {
     
     if (firebaseInitialized) {
       try {
-        // Testar conexão com Firebase
         await db.collection('health').doc('check').set({
           timestamp: new Date().toISOString(),
           status: 'active'
@@ -60,20 +108,21 @@ app.get('/health', async (req, res) => {
     let stats = {};
     
     if (firebaseInitialized && firebaseStatus === 'connected') {
-      // Estatísticas do Firebase
-      const [entregadoresSnapshot, pedidosSnapshot] = await Promise.all([
+      const [usersSnapshot, entregadoresSnapshot, pedidosSnapshot] = await Promise.all([
+        db.collection('users').get(),
         db.collection('entregadores').get(),
         db.collection('pedidos').get()
       ]);
       
       stats = {
+        users: usersSnapshot.size,
         entregadores: entregadoresSnapshot.size,
         pedidos: pedidosSnapshot.size,
         pedidosPendentes: pedidosSnapshot.docs.filter(doc => doc.data().status === 'pendente').length
       };
     } else {
-      // Estatísticas em memória
       stats = {
+        users: users.length,
         entregadores: entregadores.length,
         pedidos: pedidos.length,
         pedidosPendentes: pedidos.filter(p => p.status === 'pendente').length
@@ -95,13 +144,68 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// CADASTRO COM FIREBASE
-app.post('/cadastro', async (req, res) => {
+// Registrar usuário (após login social)
+app.post('/register-user', async (req, res) => {
   try {
-    console.log('📥 Recebendo cadastro...');
+    const { uid, email, name, role = 'entregador' } = req.body;
+
+    if (!uid || !email) {
+      return res.status(400).json({
+        success: false,
+        message: 'UID e email são obrigatórios'
+      });
+    }
+
+    const userData = {
+      email,
+      name: name || '',
+      role,
+      profileCompleted: false,
+      createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString()
+    };
+
+    let result;
+
+    if (firebaseInitialized) {
+      const userRef = db.collection('users').doc(uid);
+      await userRef.set(userData, { merge: true });
+      result = { id: uid, ...userData };
+    } else {
+      const existingUser = users.find(u => u.id === uid);
+      if (existingUser) {
+        Object.assign(existingUser, userData);
+        result = existingUser;
+      } else {
+        const newUser = { id: uid, ...userData };
+        users.push(newUser);
+        result = newUser;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Usuário registrado/atualizado com sucesso',
+      user: result
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao registrar usuário:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor: ' + error.message
+    });
+  }
+});
+
+// ==================== ROTAS DE ENTREGADORES ====================
+
+// Cadastro de entregador (completa perfil)
+app.post('/cadastro', authenticate, async (req, res) => {
+  try {
+    console.log('📥 Recebendo cadastro de entregador...');
     const dados = req.body;
     
-    // Campos obrigatórios atualizados (cnh não é mais obrigatório)
     const camposObrigatorios = ['nome', 'cpf', 'telefone', 'veiculo', 'endereco', 'cidade', 'estado', 'cep', 'disponibilidade', 'possuiCnh'];
     const camposFaltantes = camposObrigatorios.filter(campo => !dados[campo]);
     
@@ -114,20 +218,52 @@ app.post('/cadastro', async (req, res) => {
 
     const cpfLimpo = dados.cpf.replace(/\D/g, '');
 
-    // Verificar CPF existente (mantém igual)
-    const cpfExistente = await db.collection('entregadores')
-      .where('cpf', '==', cpfLimpo)
-      .get();
+    // Verificar se já existe perfil para este usuário
+    let entregadorExistente = null;
     
-    if (!cpfExistente.empty) {
+    if (firebaseInitialized) {
+      const snapshot = await db.collection('entregadores')
+        .where('userId', '==', req.user.uid)
+        .get();
+      
+      if (!snapshot.empty) {
+        entregadorExistente = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+      }
+    } else {
+      entregadorExistente = entregadores.find(e => e.userId === req.user.uid);
+    }
+
+    if (entregadorExistente) {
+      return res.status(400).json({
+        success: false,
+        message: 'Perfil de entregador já cadastrado para este usuário'
+      });
+    }
+
+    // Verificar CPF existente
+    let cpfExistente = false;
+    
+    if (firebaseInitialized) {
+      const cpfSnapshot = await db.collection('entregadores')
+        .where('cpf', '==', cpfLimpo)
+        .get();
+      
+      cpfExistente = !cpfSnapshot.empty;
+    } else {
+      cpfExistente = entregadores.some(e => e.cpf === cpfLimpo);
+    }
+
+    if (cpfExistente) {
       return res.status(400).json({
         success: false,
         message: 'CPF já cadastrado no sistema'
       });
     }
 
-    // Criar entregador com novos campos
+    // Criar perfil do entregador
     const novoEntregador = {
+      userId: req.user.uid,
+      userEmail: req.user.email,
       nome: dados.nome,
       cpf: cpfLimpo,
       telefone: dados.telefone.replace(/\D/g, ''),
@@ -137,28 +273,42 @@ app.post('/cadastro', async (req, res) => {
       estado: dados.estado,
       cep: dados.cep,
       disponibilidade: dados.disponibilidade,
-      possuiCnh: dados.possuiCnh, // Novo campo
-      cnh: dados.cnh || null,     // CNH pode ser null agora
+      possuiCnh: dados.possuiCnh,
+      cnh: dados.cnh || null,
       dataCadastro: new Date().toISOString(),
       status: 'pendente',
       verificado: false,
       ativo: true
     };
 
-    // Salvar no Firestore (mantém igual)
-    const docRef = await db.collection('entregadores').add(novoEntregador);
-    const resultado = { 
-      id: docRef.id, 
-      ...novoEntregador 
-    };
+    let resultado;
 
-    console.log('✅ Cadastro salvo no Firestore:', dados.nome);
+    if (firebaseInitialized) {
+      const docRef = await db.collection('entregadores').add(novoEntregador);
+      resultado = { id: docRef.id, ...novoEntregador };
+      
+      // Atualizar usuário para marcar perfil como completo
+      await db.collection('users').doc(req.user.uid).update({
+        profileCompleted: true
+      });
+    } else {
+      novoEntregador.id = nextEntregadorId++;
+      entregadores.push(novoEntregador);
+      resultado = novoEntregador;
+      
+      // Atualizar usuário em memória
+      const user = users.find(u => u.id === req.user.uid);
+      if (user) {
+        user.profileCompleted = true;
+      }
+    }
+
+    console.log('✅ Perfil de entregador salvo:', dados.nome);
 
     res.status(201).json({
       success: true,
       message: 'Cadastro realizado com sucesso! Aguarde aprovação.',
-      id: resultado.id,
-      dados: resultado
+      entregador: resultado
     });
 
   } catch (error) {
@@ -170,119 +320,69 @@ app.post('/cadastro', async (req, res) => {
   }
 });
 
-// LISTAR PEDIDOS COM FIREBASE
-app.get('/pedidos', async (req, res) => {
+// Listar entregadores (apenas admin)
+app.get('/entregadores', authenticate, isAdmin, async (req, res) => {
   try {
-    const { status, entregadorId } = req.query;
-    
-    let pedidosData = [];
+    let entregadoresData = [];
 
     if (firebaseInitialized) {
-      try {
-        // Buscar do Firebase
-        let pedidosRef = db.collection('pedidos');
-        
-        const snapshot = await pedidosRef.get();
-        pedidosData = snapshot.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data() 
-        }));
-
-        // Aplicar filtros
-        if (status) {
-          pedidosData = pedidosData.filter(p => p.status === status);
-        }
-        if (entregadorId) {
-          pedidosData = pedidosData.filter(p => p.entregadorId === entregadorId);
-        }
-      } catch (error) {
-        console.error('❌ Erro ao buscar pedidos do Firebase:', error);
-        pedidosData = pedidos; // Fallback para memória
-      }
+      const snapshot = await db.collection('entregadores').get();
+      entregadoresData = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      }));
     } else {
-      // Buscar da memória
-      pedidosData = pedidos;
-      if (status) {
-        pedidosData = pedidosData.filter(p => p.status === status);
-      }
-      if (entregadorId) {
-        pedidosData = pedidosData.filter(p => p.entregadorId === parseInt(entregadorId));
-      }
+      entregadoresData = entregadores;
     }
 
     res.json({
       success: true,
-      data: pedidosData,
-      total: pedidosData.length,
-      timestamp: new Date().toISOString()
+      data: entregadoresData,
+      total: entregadoresData.length
     });
+
   } catch (error) {
-    console.error('❌ Erro ao listar pedidos:', error);
+    console.error('❌ Erro ao listar entregadores:', error);
     res.status(500).json({
       success: false,
-      message: 'Erro ao buscar pedidos'
+      message: 'Erro ao buscar entregadores'
     });
   }
 });
 
-// CRIAR PEDIDO COM FIREBASE
-app.post('/pedidos', async (req, res) => {
-  try {
-    const {
-      clienteNome,
-      clienteTelefone,
-      enderecoColeta,
-      enderecoEntrega,
-      itens,
-      valor,
-      observacoes,
-      urgente = false
-    } = req.body;
+// ==================== ROTAS DE PEDIDOS ====================
 
-    // Validação
-    if (!clienteNome || !clienteTelefone || !enderecoColeta || !enderecoEntrega || !valor) {
+// Criar pedido (apenas admin)
+app.post('/pedidos', authenticate, isAdmin, async (req, res) => {
+  try {
+    const { description, quantity } = req.body;
+
+    if (!description || !quantity) {
       return res.status(400).json({
         success: false,
-        message: 'Dados obrigatórios faltando'
+        message: 'Descrição e quantidade são obrigatórias'
       });
     }
 
     const novoPedido = {
-      clienteNome,
-      clienteTelefone: clienteTelefone.replace(/\D/g, ''),
-      enderecoColeta,
-      enderecoEntrega,
-      itens: itens || [],
-      valor: parseFloat(valor),
-      observacoes: observacoes || '',
-      urgente: Boolean(urgente),
+      description,
+      quantity: parseInt(quantity),
       status: 'pendente',
-      entregadorId: null,
-      entregadorNome: null,
-      dataCriacao: new Date().toISOString(),
-      dataAtualizacao: new Date().toISOString()
+      createdBy: req.user.uid,
+      createdByName: req.user.name || 'Administrador',
+      acceptedBy: null,
+      acceptedByName: null,
+      createdAt: new Date().toISOString(),
+      acceptedAt: null,
+      updatedAt: new Date().toISOString()
     };
 
     let resultado;
 
     if (firebaseInitialized) {
-      try {
-        // Salvar no Firebase
-        const docRef = await db.collection('pedidos').add(novoPedido);
-        resultado = { 
-          id: docRef.id, 
-          ...novoPedido 
-        };
-        console.log('📦 Pedido salvo no Firebase:', docRef.id);
-      } catch (error) {
-        console.error('❌ Erro ao salvar pedido no Firebase:', error);
-        // Fallback para memória
-        novoPedido.id = nextPedidoId++;
-        pedidos.push(novoPedido);
-        resultado = novoPedido;
-      }
+      const docRef = await db.collection('pedidos').add(novoPedido);
+      resultado = { id: docRef.id, ...novoPedido };
     } else {
-      // Salvar em memória
       novoPedido.id = nextPedidoId++;
       pedidos.push(novoPedido);
       resultado = novoPedido;
@@ -298,64 +398,360 @@ app.post('/pedidos', async (req, res) => {
     console.error('❌ Erro ao criar pedido:', error);
     res.status(500).json({
       success: false,
-      message: 'Erro ao criar pedido'
+      message: 'Erro ao criar pedido: ' + error.message
     });
   }
 });
 
-// [MANTENHA AS OUTRAS ROTAS COMO ACEITAR PEDIDO, ESTATÍSTICAS, ENTREGADORES, ETC...]
-// ... (o restante do código das outras rotas permanece igual ao anterior)
+// Listar pedidos (com filtros)
+app.get('/pedidos', authenticate, async (req, res) => {
+  try {
+    const { status } = req.query;
+    
+    let pedidosData = [];
 
-// ROTA RAIZ
+    if (firebaseInitialized) {
+      let query = db.collection('pedidos');
+      
+      // Aplicar filtro de status se fornecido
+      if (status) {
+        query = query.where('status', '==', status);
+      }
+      
+      const snapshot = await query.orderBy('createdAt', 'desc').get();
+      pedidosData = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      }));
+    } else {
+      pedidosData = pedidos;
+      if (status) {
+        pedidosData = pedidosData.filter(p => p.status === status);
+      }
+      pedidosData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+
+    // Se for entregador, mostrar apenas pedidos pendentes ou aceitos por ele
+    if (req.user.role === 'entregador') {
+      pedidosData = pedidosData.filter(p => 
+        p.status === 'pendente' || p.acceptedBy === req.user.uid
+      );
+    }
+
+    res.json({
+      success: true,
+      data: pedidosData,
+      total: pedidosData.length
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao listar pedidos:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar pedidos'
+    });
+  }
+});
+
+// Aceitar pedido (entregador)
+app.post('/pedidos/:id/aceitar', authenticate, async (req, res) => {
+  try {
+    const pedidoId = req.params.id;
+    const userId = req.user.uid;
+    const userName = req.user.name || 'Entregador';
+
+    // Verificar se o usuário é entregador
+    if (req.user.role !== 'entregador') {
+      return res.status(403).json({
+        success: false,
+        message: 'Apenas entregadores podem aceitar pedidos'
+      });
+    }
+
+    let pedido;
+
+    if (firebaseInitialized) {
+      const pedidoRef = db.collection('pedidos').doc(pedidoId);
+      const pedidoDoc = await pedidoRef.get();
+      
+      if (!pedidoDoc.exists) {
+        return res.status(404).json({
+          success: false,
+          message: 'Pedido não encontrado'
+        });
+      }
+
+      pedido = pedidoDoc.data();
+
+      // Verificar se o pedido já foi aceito
+      if (pedido.status !== 'pendente') {
+        return res.status(400).json({
+          success: false,
+          message: 'Pedido já foi aceito por outro entregador'
+        });
+      }
+
+      // Atualizar pedido
+      await pedidoRef.update({
+        status: 'aceito',
+        acceptedBy: userId,
+        acceptedByName: userName,
+        acceptedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+
+      pedido = { id: pedidoDoc.id, ...pedidoDoc.data() };
+
+    } else {
+      pedido = pedidos.find(p => p.id == pedidoId);
+      
+      if (!pedido) {
+        return res.status(404).json({
+          success: false,
+          message: 'Pedido não encontrado'
+        });
+      }
+
+      if (pedido.status !== 'pendente') {
+        return res.status(400).json({
+          success: false,
+          message: 'Pedido já foi aceito por outro entregador'
+        });
+      }
+
+      pedido.status = 'aceito';
+      pedido.acceptedBy = userId;
+      pedido.acceptedByName = userName;
+      pedido.acceptedAt = new Date().toISOString();
+      pedido.updatedAt = new Date().toISOString();
+    }
+
+    res.json({
+      success: true,
+      message: 'Pedido aceito com sucesso!',
+      pedido: pedido
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao aceitar pedido:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao aceitar pedido: ' + error.message
+    });
+  }
+});
+
+// Atualizar status do pedido
+app.patch('/pedidos/:id/status', authenticate, async (req, res) => {
+  try {
+    const pedidoId = req.params.id;
+    const { status } = req.body;
+
+    const statusValidos = ['pendente', 'aceito', 'em_rota', 'entregue', 'cancelado'];
+    if (!statusValidos.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status inválido'
+      });
+    }
+
+    let pedido;
+
+    if (firebaseInitialized) {
+      const pedidoRef = db.collection('pedidos').doc(pedidoId);
+      const pedidoDoc = await pedidoRef.get();
+      
+      if (!pedidoDoc.exists) {
+        return res.status(404).json({
+          success: false,
+          message: 'Pedido não encontrado'
+        });
+      }
+
+      pedido = pedidoDoc.data();
+
+      // Verificar permissões
+      if (req.user.role === 'entregador' && pedido.acceptedBy !== req.user.uid) {
+        return res.status(403).json({
+          success: false,
+          message: 'Você só pode atualizar pedidos que aceitou'
+        });
+      }
+
+      await pedidoRef.update({
+        status: status,
+        updatedAt: new Date().toISOString()
+      });
+
+      pedido = { id: pedidoDoc.id, ...pedidoDoc.data() };
+
+    } else {
+      pedido = pedidos.find(p => p.id == pedidoId);
+      
+      if (!pedido) {
+        return res.status(404).json({
+          success: false,
+          message: 'Pedido não encontrado'
+        });
+      }
+
+      if (req.user.role === 'entregador' && pedido.acceptedBy !== req.user.uid) {
+        return res.status(403).json({
+          success: false,
+          message: 'Você só pode atualizar pedidos que aceitou'
+        });
+      }
+
+      pedido.status = status;
+      pedido.updatedAt = new Date().toISOString();
+    }
+
+    res.json({
+      success: true,
+      message: 'Status do pedido atualizado com sucesso!',
+      pedido: pedido
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao atualizar status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao atualizar status: ' + error.message
+    });
+  }
+});
+
+// ==================== ROTAS ADMIN ====================
+
+// Criar usuário admin (endpoint especial)
+app.post('/admin/create-admin', async (req, res) => {
+  try {
+    const { uid, email, name } = req.body;
+
+    if (!uid || !email) {
+      return res.status(400).json({
+        success: false,
+        message: 'UID e email são obrigatórios'
+      });
+    }
+
+    const adminData = {
+      email,
+      name: name || 'Administrador',
+      role: 'admin',
+      profileCompleted: true,
+      createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString()
+    };
+
+    if (firebaseInitialized) {
+      await db.collection('users').doc(uid).set(adminData, { merge: true });
+    } else {
+      const existingUser = users.find(u => u.id === uid);
+      if (existingUser) {
+        Object.assign(existingUser, adminData);
+      } else {
+        users.push({ id: uid, ...adminData });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Usuário admin criado com sucesso!',
+      user: adminData
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao criar admin:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao criar admin: ' + error.message
+    });
+  }
+});
+
+// Aprovar/rejeitar entregador (admin)
+app.patch('/entregadores/:id/aprovar', authenticate, isAdmin, async (req, res) => {
+  try {
+    const entregadorId = req.params.id;
+    const { aprovado } = req.body;
+
+    if (typeof aprovado !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: 'Campo "aprovado" deve ser true ou false'
+      });
+    }
+
+    if (firebaseInitialized) {
+      const entregadorRef = db.collection('entregadores').doc(entregadorId);
+      await entregadorRef.update({
+        status: aprovado ? 'aprovado' : 'rejeitado',
+        verificado: aprovado,
+        dataAprovacao: aprovado ? new Date().toISOString() : null
+      });
+    } else {
+      const entregador = entregadores.find(e => e.id == entregadorId);
+      if (entregador) {
+        entregador.status = aprovado ? 'aprovado' : 'rejeitado';
+        entregador.verificado = aprovado;
+        entregador.dataAprovacao = aprovado ? new Date().toISOString() : null;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Entregador ${aprovado ? 'aprovado' : 'rejeitado'} com sucesso!`
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao aprovar entregador:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao aprovar entregador: ' + error.message
+    });
+  }
+});
+
+// ==================== ROTA RAIZ ====================
+
 app.get('/', (req, res) => {
   res.json({
-    message: '🚀 API Entregadores 67 - Sistema de Entregas',
-    version: '1.0.0',
+    message: '🚀 API Entregadores 67 - Sistema Completo de Entregas',
+    version: '2.0.0',
     database: firebaseInitialized ? 'Firebase' : 'Memória',
     endpoints: {
       health: 'GET /health',
-      cadastro: 'POST /cadastro',
-      pedidos: {
-        listar: 'GET /pedidos',
-        criar: 'POST /pedidos',
-        aceitar: 'POST /pedidos/:id/aceitar',
-        status: 'PATCH /pedidos/:id/status'
+      auth: {
+        register: 'POST /register-user',
+        createAdmin: 'POST /admin/create-admin'
       },
-      estatisticas: 'GET /estatisticas',
-      entregadores: 'GET /entregadores'
+      entregadores: {
+        cadastro: 'POST /cadastro (autenticado)',
+        listar: 'GET /entregadores (admin)',
+        aprovar: 'PATCH /entregadores/:id/aprovar (admin)'
+      },
+      pedidos: {
+        listar: 'GET /pedidos (autenticado)',
+        criar: 'POST /pedidos (admin)',
+        aceitar: 'POST /pedidos/:id/aceitar (entregador)',
+        status: 'PATCH /pedidos/:id/status (autenticado)'
+      }
     },
     timestamp: new Date().toISOString()
   });
 });
 
-// MIDDLEWARE PARA ROTAS NÃO ENCONTRADAS
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Endpoint não encontrado',
-    path: req.path
-  });
-});
+// ==================== INICIALIZAÇÃO ====================
 
-// MIDDLEWARE DE ERRO GLOBAL
-app.use((error, req, res, next) => {
-  console.error('❌ Erro global:', error);
-  res.status(500).json({
-    success: false,
-    message: 'Erro interno do servidor: ' + error.message
-  });
-});
-
-// INICIAR SERVIDOR
 app.listen(PORT, () => {
   console.log('='.repeat(70));
-  console.log('🚀 ENTREGADORES 67 - SISTEMA DE ENTREGAS');
+  console.log('🚀 ENTREGADORES 67 - SISTEMA COMPLETO v2.0');
   console.log('='.repeat(70));
   console.log(`📍 Servidor rodando: http://localhost:${PORT}`);
   console.log(`❤️  Health check: http://localhost:${PORT}/health`);
-  console.log(`📝 Cadastro: POST http://localhost:${PORT}/cadastro`);
-  console.log(`📦 Pedidos: GET http://localhost:${PORT}/pedidos`);
-  console.log(`📊 Estatísticas: GET http://localhost:${PORT}/estatisticas`);
+  console.log(`🔑 Register user: POST http://localhost:${PORT}/register-user`);
+  console.log(`👑 Create admin: POST http://localhost:${PORT}/admin/create-admin`);
   console.log('='.repeat(70));
   console.log(`⚡ Banco de dados: ${firebaseInitialized ? 'Firebase (Produção)' : 'Memória (Desenvolvimento)'}`);
   console.log('='.repeat(70));
@@ -366,39 +762,68 @@ app.listen(PORT, () => {
   }
 });
 
-// CRIAR DADOS DE EXEMPLO (apenas para memória)
 function criarDadosExemplo() {
-  // Entregadores exemplo
+  // Criar admin de exemplo
+  const adminId = 'admin-exemplo';
+  users.push({
+    id: adminId,
+    email: 'admin@entregadores67.com',
+    name: 'Administrador',
+    role: 'admin',
+    profileCompleted: true,
+    createdAt: new Date().toISOString(),
+    lastLogin: new Date().toISOString()
+  });
+
+  // Criar entregador de exemplo
   entregadores.push({
     id: nextEntregadorId++,
-    nome: "João Silva",
-    cpf: "12345678901",
-    telefone: "67999999999",
-    veiculo: "moto",
-    endereco: "Rua Exemplo, 123",
-    cidade: "Ivinhema",
-    estado: "MS",
-    cep: "79740000",
-    disponibilidade: "flexivel",
-    status: "aprovado",
+    userId: 'entregador-exemplo',
+    userEmail: 'entregador@exemplo.com',
+    nome: 'João Silva',
+    cpf: '12345678901',
+    telefone: '67999999999',
+    veiculo: 'moto',
+    endereco: 'Rua Exemplo, 123',
+    cidade: 'Ivinhema',
+    estado: 'MS',
+    cep: '79740000',
+    disponibilidade: 'flexivel',
+    possuiCnh: true,
+    cnh: '123456789',
+    status: 'aprovado',
     verificado: true,
     ativo: true,
     dataCadastro: new Date().toISOString()
   });
 
-  // Pedidos exemplo
+  // Criar pedidos de exemplo
   pedidos.push({
     id: nextPedidoId++,
-    clienteNome: "Maria Santos",
-    clienteTelefone: "67988888888",
-    enderecoColeta: "Restaurante Sabor Caseiro - Av. Principal, 456",
-    enderecoEntrega: "Rua das Flores, 789 - Centro",
-    itens: ["2x Pizza Calabresa", "1x Coca-Cola 2L"],
-    valor: 45.50,
-    observacoes: "Entregar sem campainha, apenas WhatsApp",
-    status: "pendente",
-    dataCriacao: new Date().toISOString(),
-    dataAtualizacao: new Date().toISOString()
+    description: '2x Pizza Calabresa + 1x Coca-Cola 2L',
+    quantity: 1,
+    status: 'pendente',
+    createdBy: adminId,
+    createdByName: 'Administrador',
+    acceptedBy: null,
+    acceptedByName: null,
+    createdAt: new Date().toISOString(),
+    acceptedAt: null,
+    updatedAt: new Date().toISOString()
+  });
+
+  pedidos.push({
+    id: nextPedidoId++,
+    description: 'Entrega de documentos - Cartório para Prefeitura',
+    quantity: 1,
+    status: 'aceito',
+    createdBy: adminId,
+    createdByName: 'Administrador',
+    acceptedBy: 'entregador-exemplo',
+    acceptedByName: 'João Silva',
+    createdAt: new Date(Date.now() - 3600000).toISOString(),
+    acceptedAt: new Date(Date.now() - 1800000).toISOString(),
+    updatedAt: new Date().toISOString()
   });
 
   console.log('📋 Dados de exemplo criados para demonstração');

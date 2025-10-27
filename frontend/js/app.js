@@ -1,6 +1,8 @@
 // Configuração do backend
 const BACKEND_URL = 'https://entregador67.railway.internal';
 
+// app.js - Funções gerais atualizadas
+
 // Inicialização da aplicação
 document.addEventListener('DOMContentLoaded', function() {
     initApp();
@@ -25,7 +27,7 @@ async function checkBackendStatus() {
             console.log('✅ Backend conectado');
         }
     } catch (error) {
-        console.warn('⚠️ Backend não disponível, usando modo offline');
+        console.warn('⚠️ Backend não disponível');
     }
 }
 
@@ -88,52 +90,3 @@ window.Entregadores67 = {
     mostrarNotificacao,
     BACKEND_URL
 };
-
-// Mostrar/ocultar campo CNH baseado na seleção
-document.getElementById('possuiCnh').addEventListener('change', function() {
-    const cnhContainer = document.getElementById('cnhContainer');
-    const cnhInput = document.getElementById('cnh');
-    
-    if (this.value === 'sim') {
-        cnhContainer.style.display = 'block';
-        cnhInput.required = true;
-    } else {
-        cnhContainer.style.display = 'none';
-        cnhInput.required = false;
-        cnhInput.value = ''; // Limpa o campo quando escondido
-    }
-});
-
-// Função de cadastro atualizada
-async function cadastrarEntregador(dados) {
-    try {
-        // Preparar dados para envio
-        const dadosEnvio = {
-            ...dados,
-            // Se não possui CNH, envia null
-            cnh: dados.possuiCnh === 'sim' ? dados.cnh : null
-        };
-
-        const response = await fetch('http://localhost:3000/cadastro', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(dadosEnvio)
-        });
-
-        const result = await response.json();
-        
-        if (result.success) {
-            alert('✅ Cadastro realizado com sucesso!');
-            // Limpar formulário
-            document.getElementById('formCadastro').reset();
-            document.getElementById('cnhContainer').style.display = 'none';
-        } else {
-            alert('❌ Erro no cadastro: ' + result.message);
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        alert('❌ Erro ao conectar com o servidor');
-    }
-}

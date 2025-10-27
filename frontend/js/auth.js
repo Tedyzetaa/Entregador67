@@ -9,10 +9,12 @@ const firebaseConfig = {
     measurementId: "G-H6TN06K0XK"
 };
 
+// Backend URL - ATUALIZE COM SUA URL
+const BACKEND_URL = 'http://entregador67.railway.internal'; // Ou a URL do seu backend
+
 // Inicializar Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
-const db = firebase.firestore();
 
 // Elementos DOM
 const loginBtn = document.getElementById('login-btn');
@@ -32,13 +34,15 @@ const btnSubmitCadastro = document.getElementById('btn-submit-cadastro');
 
 // Estado da aplicação
 let currentUser = null;
-let userProfile = null;
+let userToken = null;
+let userRole = null;
 
 // Inicializar aplicação
 document.addEventListener('DOMContentLoaded', function() {
     initAuth();
     initEventListeners();
     aplicarMascaras();
+    initCNHLogic();
 });
 
 // Inicializar autenticação
@@ -46,42 +50,81 @@ function initAuth() {
     auth.onAuthStateChanged(async (user) => {
         if (user) {
             currentUser = user;
-            await loadUserProfile(user.uid);
+            userToken = await user.getIdToken();
+            await registerUserInBackend(user);
+            await checkUserProfile();
             showUserInfo(user);
-            checkUserRegistration(user.uid);
         } else {
             currentUser = null;
-            userProfile = null;
+            userToken = null;
+            userRole = null;
             hideUserInfo();
         }
     });
 }
 
-// Carregar perfil do usuário
-async function loadUserProfile(uid) {
+// Registrar usuário no backend após login social
+async function registerUserInBackend(user) {
     try {
-        const doc = await db.collection('entregadores').doc(uid).get();
-        if (doc.exists) {
-            userProfile = doc.data();
+        const response = await fetch(`${BACKEND_URL}/register-user`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                uid: user.uid,
+                email: user.email,
+                name: user.displayName || user.email.split('@')[0],
+                role: 'entregador' // Default role
+            })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            userRole = result.user.role;
+            console.log('✅ Usuário registrado no backend:', result.user);
+            return result.user;
+        } else {
+            console.error('❌ Erro ao registrar usuário:', result.message);
         }
     } catch (error) {
-        console.error('Erro ao carregar perfil:', error);
+        console.error('❌ Erro ao conectar com backend:', error);
     }
 }
 
-// Verificar se usuário já completou cadastro
-async function checkUserRegistration(uid) {
+// Verificar se usuário já tem perfil completo
+async function checkUserProfile() {
+    if (!currentUser || !userToken) return;
+
     try {
-        const doc = await db.collection('entregadores').doc(uid).get();
-        if (!doc.exists) {
-            // Usuário não completou cadastro
-            showCadastroModal();
-        } else {
-            // Usuário já cadastrado, redirecionar para dashboard
-            redirectToDashboard();
+        // Verificar se é admin
+        if (userRole === 'admin') {
+            redirectToAdmin();
+            return;
+        }
+
+        // Verificar se já completou cadastro de entregador
+        const response = await fetch(`${BACKEND_URL}/entregadores`, {
+            headers: {
+                'Authorization': `Bearer ${userToken}`
+            }
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            const userEntregador = result.data.find(e => e.userId === currentUser.uid);
+            
+            if (userEntregador) {
+                // Já tem cadastro completo, redirecionar para área do entregador
+                redirectToEntregador();
+            } else {
+                // Não tem cadastro, mostrar modal
+                showCadastroModal();
+            }
         }
     } catch (error) {
-        console.error('Erro ao verificar cadastro:', error);
+        console.error('❌ Erro ao verificar perfil:', error);
     }
 }
 
@@ -115,6 +158,22 @@ function initEventListeners() {
     cadastroForm.addEventListener('submit', handleCadastroSubmit);
 }
 
+// Lógica do campo CNH
+function initCNHLogic() {
+    const possuiCnhSelect = document.getElementById('possuiCnh');
+    const cnhContainer = document.getElementById('cnhContainer');
+
+    if (possuiCnhSelect && cnhContainer) {
+        possuiCnhSelect.addEventListener('change', function() {
+            if (this.value === 'sim') {
+                cnhContainer.style.display = 'block';
+            } else {
+                cnhContainer.style.display = 'none';
+            }
+        });
+    }
+}
+
 // Mostrar modal de login
 function showLoginModal() {
     loginModal.style.display = 'flex';
@@ -134,10 +193,10 @@ async function handleGoogleLogin() {
         provider.addScope('email');
         
         const result = await auth.signInWithPopup(provider);
-        console.log('Login Google bem-sucedido:', result.user);
+        console.log('✅ Login Google bem-sucedido:', result.user);
         
     } catch (error) {
-        console.error('Erro no login Google:', error);
+        console.error('❌ Erro no login Google:', error);
         alert('Erro ao fazer login com Google: ' + error.message);
     }
 }
@@ -150,90 +209,78 @@ async function handleAppleLogin() {
         provider.addScope('name');
         
         const result = await auth.signInWithPopup(provider);
-        console.log('Login Apple bem-sucedido:', result.user);
+        console.log('✅ Login Apple bem-sucedido:', result.user);
         
     } catch (error) {
-        console.error('Erro no login Apple:', error);
-        alert('Erro ao fazer login com Apple: ' + error.message);
+        console.error('❌ Erro no login Apple:', error);
+        alert('Login com Apple ainda não disponível. Use Google ou entre em contato com suporte.');
     }
 }
 
-// Login com Email (simplificado - poderia ser expandido)
+// Login com Email
 function handleEmailLogin() {
-    alert('Login com email será implementado em breve!');
-    // Aqui poderia abrir outro modal para email/senha
+    alert('Login com email será implementado em breve! Use Google para continuar.');
 }
 
 // Logout
 async function handleLogout() {
     try {
         await auth.signOut();
-        console.log('Usuário deslogado');
+        console.log('✅ Usuário deslogado');
     } catch (error) {
-        console.error('Erro no logout:', error);
+        console.error('❌ Erro no logout:', error);
     }
 }
 
 // Mostrar informações do usuário
 function showUserInfo(user) {
-    userName.textContent = user.displayName || user.email;
-    userAvatar.src = user.photoURL || '/img/default-avatar.png';
-    userInfo.style.display = 'flex';
-    loginBtn.style.display = 'none';
+    if (userName) userName.textContent = user.displayName || user.email;
+    if (userAvatar) userAvatar.src = user.photoURL || 'https://via.placeholder.com/40';
+    if (userInfo) userInfo.style.display = 'flex';
+    if (loginBtn) loginBtn.style.display = 'none';
 }
 
 // Esconder informações do usuário
 function hideUserInfo() {
-    userInfo.style.display = 'none';
-    loginBtn.style.display = 'flex';
+    if (userInfo) userInfo.style.display = 'none';
+    if (loginBtn) loginBtn.style.display = 'flex';
 }
 
-// Redirecionar para dashboard
-function redirectToDashboard() {
-    // Em uma implementação real, isso redirecionaria para outra página
-    console.log('Redirecionando para dashboard...');
-    // window.location.href = 'dashboard.html';
+// Redirecionar para área do entregador
+function redirectToEntregador() {
+    window.location.href = 'entregador.html';
+}
+
+// Redirecionar para área admin
+function redirectToAdmin() {
+    window.location.href = 'admin.html';
 }
 
 // Envio do formulário de cadastro
 async function handleCadastroSubmit(e) {
     e.preventDefault();
     
-    if (!currentUser) {
+    if (!currentUser || !userToken) {
         alert('Você precisa estar logado para completar o cadastro.');
         return;
     }
 
     // Obter dados do formulário
     const formData = new FormData(cadastroForm);
+    const possuiCnh = formData.get('possuiCnh');
+    
     const dados = {
-        // Dados pessoais
         nome: formData.get('nome'),
         cpf: formData.get('cpf'),
         telefone: formData.get('telefone'),
-        dataNascimento: formData.get('dataNascimento'),
-        
-        // Endereço
+        veiculo: formData.get('veiculo'),
         endereco: formData.get('endereco'),
         cidade: formData.get('cidade'),
         estado: formData.get('estado'),
         cep: formData.get('cep'),
-        
-        // Veículo e disponibilidade
-        veiculo: formData.get('veiculo'),
-        placa: formData.get('placa'),
         disponibilidade: formData.get('disponibilidade'),
-        
-        // Documentos
-        cnh: formData.get('cnh'),
-        categoriaCnh: formData.get('categoriaCnh'),
-        
-        // Metadados
-        userId: currentUser.uid,
-        email: currentUser.email,
-        dataCadastro: new Date().toISOString(),
-        status: 'pendente',
-        verificado: false
+        possuiCnh: possuiCnh === 'sim',
+        cnh: possuiCnh === 'sim' ? formData.get('cnh') : null
     };
 
     // Validações
@@ -260,23 +307,37 @@ async function handleCadastroSubmit(e) {
     // Mostrar estado de carregamento
     btnSubmitCadastro.classList.add('loading');
     btnSubmitCadastro.disabled = true;
+    btnSubmitCadastro.textContent = 'CADASTRANDO...';
 
     try {
-        // Salvar no Firestore
-        await db.collection('entregadores').doc(currentUser.uid).set(dados);
-        
-        console.log('✅ Cadastro realizado com sucesso:', dados);
-        alert('Cadastro realizado com sucesso! Aguarde a aprovação.');
-        
-        cadastroModal.style.display = 'none';
-        redirectToDashboard();
+        console.log('📤 Enviando dados para cadastro:', dados);
+
+        const response = await fetch(`${BACKEND_URL}/cadastro`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userToken}`
+            },
+            body: JSON.stringify(dados)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert('✅ Cadastro realizado com sucesso! Aguarde a aprovação.');
+            cadastroModal.style.display = 'none';
+            redirectToEntregador();
+        } else {
+            throw new Error(result.message || 'Erro ao completar cadastro');
+        }
         
     } catch (error) {
         console.error('❌ Erro ao salvar cadastro:', error);
-        alert('Erro ao completar cadastro: ' + error.message);
+        alert('❌ Erro ao completar cadastro: ' + error.message);
     } finally {
         btnSubmitCadastro.classList.remove('loading');
         btnSubmitCadastro.disabled = false;
+        btnSubmitCadastro.textContent = 'COMPLETAR CADASTRO';
     }
 }
 
@@ -284,58 +345,51 @@ async function handleCadastroSubmit(e) {
 function aplicarMascaras() {
     // Máscara para CPF
     const cpfInput = document.getElementById('cpf');
-    cpfInput.addEventListener('input', function(e) {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length > 11) value = value.substring(0, 11);
-        
-        if (value.length <= 11) {
-            value = value.replace(/(\d{3})(\d)/, '$1.$2');
-            value = value.replace(/(\d{3})(\d)/, '$1.$2');
-            value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-        }
-        
-        e.target.value = value;
-    });
+    if (cpfInput) {
+        cpfInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.substring(0, 11);
+            
+            if (value.length <= 11) {
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+            }
+            
+            e.target.value = value;
+        });
+    }
     
     // Máscara para telefone
     const telefoneInput = document.getElementById('telefone');
-    telefoneInput.addEventListener('input', function(e) {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length > 11) value = value.substring(0, 11);
-        
-        if (value.length <= 11) {
-            value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
-            value = value.replace(/(\d)(\d{4})$/, '$1-$2');
-        }
-        
-        e.target.value = value;
-    });
+    if (telefoneInput) {
+        telefoneInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.substring(0, 11);
+            
+            if (value.length <= 11) {
+                value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
+                value = value.replace(/(\d)(\d{4})$/, '$1-$2');
+            }
+            
+            e.target.value = value;
+        });
+    }
     
     // Máscara para CEP
     const cepInput = document.getElementById('cep');
-    cepInput.addEventListener('input', function(e) {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length > 8) value = value.substring(0, 8);
-        
-        if (value.length > 5) {
-            value = value.replace(/^(\d{5})(\d)/, '$1-$2');
-        }
-        
-        e.target.value = value;
-    });
-
-    // Máscara para placa (formato Mercosul)
-    const placaInput = document.getElementById('placa');
-    placaInput.addEventListener('input', function(e) {
-        let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-        if (value.length > 7) value = value.substring(0, 7);
-        
-        if (value.length > 3) {
-            value = value.replace(/([A-Z0-9]{3})([A-Z0-9])/, '$1-$2');
-        }
-        
-        e.target.value = value;
-    });
+    if (cepInput) {
+        cepInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 8) value = value.substring(0, 8);
+            
+            if (value.length > 5) {
+                value = value.replace(/^(\d{5})(\d)/, '$1-$2');
+            }
+            
+            e.target.value = value;
+        });
+    }
 }
 
 // Validação de CPF
