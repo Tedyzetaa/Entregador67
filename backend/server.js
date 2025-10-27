@@ -5,9 +5,23 @@ const admin = require('firebase-admin');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// Middleware CORS - SUBSTITUA esta parte
+app.use(cors({
+    origin: [
+        'https://garagem67.vercel.app',
+        'https://entregador67.vercel.app',
+        'http://localhost:8000',
+        'http://localhost:3000',
+        'http://localhost:3001'
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+}));
+
+// Adicione ESTE middleware para lidar com preflight OPTIONS
+app.options('/api/external/orders', cors()); // Preflight específico
+app.options('*', cors()); // Habilita preflight para todas as rotas
 
 // Inicialização do Firebase
 let db = null;
@@ -828,3 +842,206 @@ function criarDadosExemplo() {
 
   console.log('📋 Dados de exemplo criados para demonstração');
 }
+
+// ==================== ROTAS PARA INTEGRAÇÃO EXTERNA ====================
+
+// Endpoint para receber pedidos do Garagem67
+app.post('/api/external/orders', async (req, res) => {
+  try {
+    console.log('📥 Recebendo pedido externo do Garagem67...');
+    
+    const {
+      external_id,
+      store_name,
+      store_phone, 
+      customer,
+      items,
+      total,
+      description,
+      notes,
+      metadata
+    } = req.body;
+
+    // Validar dados obrigatórios
+    if (!customer || !customer.name || !customer.phone || !customer.address) {
+      return res.status(400).json({
+        success: false,
+        message: 'Dados do cliente incompletos (nome, telefone e endereço são obrigatórios)'
+      });
+    }
+
+    if (!items || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nenhum item no pedido'
+      });
+    }
+
+    // Gerar ID único se não fornecido
+    const orderExternalId = external_id || `garagem67_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Criar pedido no formato do Entregadores67
+    const novoPedido = {
+      description: `🛍️ ${store_name}: ${description || items.map(item => `${item.quantity}x ${item.name}`).join(', ')}`,
+      quantity: items.reduce((sum, item) => sum + item.quantity, 1),
+      status: 'pendente',
+      createdBy: 'external_garagem67',
+      createdByName: store_name || 'Garagem 67',
+      customer: {
+        name: customer.name,
+        phone: customer.phone,
+        address: customer.address,
+        complement: customer.complement || '',
+        city: customer.city || 'Ivinhema',
+        state: customer.state || 'MS'
+      },
+      external_id: orderExternalId,
+      store_info: {
+        name: store_name || 'Garagem 67 Bar e Conveniência',
+        phone: store_phone || '67998668032'
+      },
+      items: items,
+      total: parseFloat(total) || 0,
+      notes: notes || '',
+      metadata: metadata || {},
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      // Campos específicos para rastreamento
+      source: 'garagem67',
+      acceptedBy: null,
+      acceptedByName: null,
+      acceptedAt: null
+    };
+
+    let resultado;
+
+    // Salvar no Firebase
+    if (firebaseInitialized) {
+      const docRef = await db.collection('pedidos').add(novoPedido);
+      resultado = { id: docRef.id, ...novoPedido };
+      console.log('✅ Pedido externo salvo no Firebase:', docRef.id);
+    } else {
+      // Fallback em memória
+      novoPedido.id = `ext_${Date.now()}`;
+      pedidos.push(novoPedido);
+      resultado = novoPedido;
+      console.log('✅ Pedido externo salvo em memória:', novoPedido.id);
+    }
+
+    console.log('🎉 Pedido externo processado com sucesso!');
+    console.log('📦 ID Interno:', resultado.id);
+    console.log('🆔 ID Externo:', orderExternalId);
+    console.log('👤 Cliente:', customer.name);
+    console.log('💰 Total:', total);
+
+    res.status(201).json({
+      success: true,
+      message: 'Pedido recebido e criado com sucesso!',
+      order: {
+        internal_id: resultado.id,
+        external_id: orderExternalId,
+        status: 'pendente',
+        created_at: novoPedido.createdAt
+      },
+      tracking_url: `https://entregador67.vercel.app/admin.html#gerenciar-pedidos`
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao criar pedido externo:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno ao processar pedido: ' + error.message
+    });
+  }
+});
+
+// Endpoint para verificar status do pedido
+app.get('/api/external/orders/:external_id', async (req, res) => {
+  try {
+    const externalId = req.params.external_id;
+    
+    console.log('🔍 Buscando pedido externo:', externalId);
+
+    let pedidoEncontrado = null;
+
+    if (firebaseInitialized) {
+      const snapshot = await db.collection('pedidos')
+        .where('external_id', '==', externalId)
+        .get();
+      
+      if (!snapshot.empty) {
+        pedidoEncontrado = { 
+          id: snapshot.docs[0].id, 
+          ...snapshot.docs[0].data() 
+        };
+      }
+    } else {
+      pedidoEncontrado = pedidos.find(p => p.external_id === externalId);
+    }
+
+    if (!pedidoEncontrado) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pedido não encontrado'
+      });
+    }
+
+    res.json({
+      success: true,
+      order: {
+        internal_id: pedidoEncontrado.id,
+        external_id: pedidoEncontrado.external_id,
+        status: pedidoEncontrado.status,
+        description: pedidoEncontrado.description,
+        customer: pedidoEncontrado.customer,
+        total: pedidoEncontrado.total,
+        created_at: pedidoEncontrado.createdAt,
+        accepted_by: pedidoEncontrado.acceptedByName,
+        accepted_at: pedidoEncontrado.acceptedAt,
+        updated_at: pedidoEncontrado.updatedAt
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao buscar pedido:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar pedido'
+    });
+  }
+});
+
+// Endpoint para listar pedidos externos (apenas admin)
+app.get('/api/external/orders', authenticate, isAdmin, async (req, res) => {
+  try {
+    let pedidosExternos = [];
+
+    if (firebaseInitialized) {
+      const snapshot = await db.collection('pedidos')
+        .where('source', '==', 'garagem67')
+        .orderBy('createdAt', 'desc')
+        .get();
+      
+      pedidosExternos = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      }));
+    } else {
+      pedidosExternos = pedidos.filter(p => p.source === 'garagem67')
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+
+    res.json({
+      success: true,
+      data: pedidosExternos,
+      total: pedidosExternos.length
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao listar pedidos externos:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar pedidos externos'
+    });
+  }
+});
