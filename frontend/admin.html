@@ -1,26 +1,211 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <!-- Metadados e estilos CSS -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENTREGADORES 67 - Pártel Administrativo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-bottom: 3px solid #34495e;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-button {
+            background: #34495e;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .nav-button:hover {
+            background: #3498db;
+        }
+
+        .nav-button.user {
+            background: #27ae60;
+        }
+
+        .subtitle {
+            color: #bdc3c7;
+            font-size: 14px;
+        }
+
+        main {
+            padding: 30px;
+        }
+
+        .upload-section {
+            background: #f8f9fa;
+            border: 3px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s;
+        }
+
+        .upload-section.highlight {
+            border-color: #3498db;
+            background: #ebf5fb;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 18px;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .select-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .select-button:hover {
+            background: #2980b9;
+        }
+
+        .how-it-works {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .how-it-works h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .how-it-works ul {
+            list-style: none;
+            text-align: left;
+        }
+
+        .how-it-works li {
+            margin-bottom: 8px;
+            color: #856404;
+        }
+
+        .file-status {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .file-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .file-status.success {
+            background: #d1edf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        #file-input {
+            display: none;
+        }
+        
+        .status-section {
+            margin-top: 20px;
+            text-align: left;
+        }
+        
+        .status-item {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <!-- Cabeçalho com logo e navegação -->
-            <div class="logo">ENTREGADORES 67</div>
-            <div class="nav-buttons" id="nav-buttons">
-                <!-- Botões de navegação dinâmicos -->
+            <div class="header-top">
+                <div class="logo">ENTREGADORES 67</div>
+                <div class="nav-buttons" id="nav-buttons">
+                    <button class="nav-button">Início</button>
+                    <button class="nav-button">Pedidos</button>
+                    <button class="nav-button">Entregadores</button>
+                    <button class="nav-button user" id="current-user">Teddy Colóni</button>
+                </div>
             </div>
+            <div class="subtitle">Pártel Administrativo</div>
         </header>
 
         <main>
             <section class="upload-section" id="drop-area">
-                <!-- Área de upload de arquivos JSON -->
+                <div class="upload-icon">📁</div>
                 <div class="upload-text">Arraste arquivos JSON aqui ou clique para selecionar</div>
                 <button class="select-button" id="select-files">SELECIONAR ARQUIVOS</button>
                 <input type="file" id="file-input" accept=".json" multiple>
                 
-                <!-- Instruções de uso -->
+                <div class="status-section" id="status-container">
+                    <!-- Status dos arquivos será exibido aqui -->
+                </div>
+                
                 <div class="how-it-works">
                     <h3>Como funciona:</h3>
                     <ul>
@@ -33,9 +218,353 @@
         </main>
     </div>
 
-    <!-- Scripts JavaScript -->
-    <script src="auth.js"></script>
-    <script src="admin.js"></script>
-    <script src="json-upload.js"></script>
+    <script>
+        // ========== auth.js ==========
+        class AuthSystem {
+            constructor() {
+                this.currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                this.initialize();
+            }
+
+            initialize() {
+                console.log('🚀 Inicializando sistema de autenticação...');
+                this.setupEventListeners();
+                this.checkExistingAuth();
+            }
+
+            setupEventListeners() {
+                console.log('🔧 Configurando event listeners...');
+                
+                // Verificar se elementos existem antes de adicionar listeners
+                const loginForm = document.getElementById('login-form');
+                const logoutBtn = document.getElementById('logout-btn');
+                const navButtons = document.getElementById('nav-buttons');
+
+                if (loginForm) {
+                    loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+                }
+
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', () => this.handleLogout());
+                }
+
+                if (navButtons) {
+                    this.updateNavigationButtons();
+                } else {
+                    console.log('⚠️ Elemento nav-buttons não encontrado');
+                }
+
+                console.log('✅ Event listeners configurados');
+            }
+
+            async checkExistingAuth() {
+                if (this.currentUser && this.currentUser.email) {
+                    console.log('✅ Usuário autenticado:', this.currentUser.email);
+                    await this.registerUserInBackend(this.currentUser);
+                    this.updateNavigationButtons();
+                }
+            }
+
+            async handleLogin(event) {
+                event.preventDefault();
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+
+                try {
+                    // Simular autenticação
+                    const user = {
+                        email: email,
+                        name: email.split('@')[0],
+                        role: 'admin'
+                    };
+
+                    this.currentUser = user;
+                    localStorage.setItem('currentUser', JSON.stringify(user));
+                    
+                    console.log('✅ Login realizado com sucesso');
+                    await this.registerUserInBackend(user);
+                    this.updateNavigationButtons();
+                    
+                } catch (error) {
+                    console.error('❌ Erro no login:', error);
+                }
+            }
+
+            async registerUserInBackend(user) {
+                try {
+                    console.log('📝 Registrando usuário no backend...');
+                    
+                    const response = await fetch('/api/register-user', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            email: user.email,
+                            name: user.name,
+                            role: user.role || 'user'
+                        })
+                    });
+
+                    if (response.ok) {
+                        console.log('✅ Usuário registrado no backend');
+                    } else {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                } catch (error) {
+                    console.log('⚠️ Erro ao registrar usuário, usando role padrão');
+                    // Continuar mesmo com erro no backend
+                }
+            }
+
+            updateNavigationButtons() {
+                const navButtons = document.getElementById('nav-buttons');
+                const currentUserElement = document.getElementById('current-user');
+                
+                if (!navButtons) {
+                    console.log('⚠️ Elemento nav-buttons não encontrado');
+                    return;
+                }
+
+                if (this.currentUser) {
+                    if (currentUserElement) {
+                        currentUserElement.textContent = this.currentUser.name || this.currentUser.email;
+                    }
+                }
+            }
+
+            handleLogout() {
+                this.currentUser = null;
+                localStorage.removeItem('currentUser');
+                this.updateNavigationButtons();
+                console.log('✅ Logout realizado');
+            }
+        }
+
+        // ========== admin.js ==========
+        // Verificar se currentUser já existe antes de declarar
+        let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+
+        class AdminSystem {
+            constructor() {
+                this.initialize();
+            }
+
+            initialize() {
+                console.log('🔄 Inicializando sistema administrativo...');
+                this.checkAuthentication();
+                this.loadEntregadores();
+            }
+
+            async checkAuthentication() {
+                try {
+                    // Verificar autenticação existente
+                    const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                    if (user && user.email) {
+                        currentUser = user;
+                        console.log('✅ Usuário autenticado:', user.email);
+                        this.updateUI(user);
+                    }
+                } catch (error) {
+                    console.error('❌ Erro na verificação de autenticação:', error);
+                }
+            }
+
+            updateUI(user) {
+                // Atualizar interface do usuário
+                const userElement = document.getElementById('current-user');
+                if (userElement) {
+                    userElement.textContent = user.name || user.email;
+                }
+            }
+
+            async loadEntregadores() {
+                try {
+                    const response = await fetch('/api/entregadores');
+                    if (response.ok) {
+                        const entregadores = await response.json();
+                        this.renderEntregadores(entregadores);
+                    }
+                } catch (error) {
+                    console.log('⚠️ Não foi possível carregar entregadores:', error);
+                }
+            }
+
+            renderEntregadores(entregadores) {
+                // Implementar renderização dos entregadores
+                console.log('📋 Entregadores carregados:', entregadores);
+            }
+        }
+
+        // ========== json-upload.js ==========
+        class JSONUploadManager {
+            constructor() {
+                this.initializeEventListeners();
+                console.log('📁 Inicializando JSONUploadManager...');
+            }
+
+            initializeEventListeners() {
+                const dropArea = document.getElementById('drop-area');
+                const fileInput = document.getElementById('file-input');
+                const selectButton = document.getElementById('select-files');
+
+                // Event listeners para drag and drop
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropArea.addEventListener(eventName, this.preventDefaults, false);
+                });
+
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropArea.addEventListener(eventName, () => this.highlight(dropArea), false);
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropArea.addEventListener(eventName, () => this.unhighlight(dropArea), false);
+                });
+
+                dropArea.addEventListener('drop', (e) => this.handleDrop(e), false);
+
+                // Event listeners para seleção de arquivos
+                selectButton.addEventListener('click', () => fileInput.click(), false);
+                fileInput.addEventListener('change', (e) => this.handleFiles(e.target.files), false);
+            }
+
+            preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            highlight(element) {
+                element.classList.add('highlight');
+            }
+
+            unhighlight(element) {
+                element.classList.remove('highlight');
+            }
+
+            handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                this.handleFiles(files);
+            }
+
+            handleFiles(files) {
+                if (!files.length) return;
+
+                console.log(`📂 ${files.length} arquivo(s) selecionado(s)`);
+
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    this.processFile(file);
+                }
+            }
+
+            async processFile(file) {
+                console.log('🔄 Processando arquivo:', file.name, file);
+
+                // Verificar se é um arquivo JSON
+                if (!file.name.endsWith('.json')) {
+                    this.showError(file.name, 'Arquivo não é um JSON');
+                    return;
+                }
+
+                try {
+                    // Primeiro, validar o JSON
+                    const jsonContent = await this.validateJSON(file);
+                    
+                    // Se for válido, enviar para o backend
+                    await this.uploadToBackend(file, jsonContent);
+                    
+                } catch (error) {
+                    console.error('❌ Erro ao processar arquivo:', error);
+                    this.showError(file.name, error.message);
+                }
+            }
+
+            async validateJSON(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+
+                    reader.onload = (e) => {
+                        try {
+                            const json = JSON.parse(e.target.result);
+                            
+                            // Validar estrutura básica do JSON
+                            if (!json.order_id) {
+                                throw new Error('JSON não possui order_id');
+                            }
+                            if (!json.customer) {
+                                throw new Error('JSON não possui customer');
+                            }
+                            if (!json.items || !Array.isArray(json.items)) {
+                                throw new Error('JSON não possui items array');
+                            }
+                            
+                            resolve(json);
+                        } catch (error) {
+                            reject(new Error(`JSON inválido: ${error.message}`));
+                        }
+                    };
+
+                    reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+                    reader.readAsText(file);
+                });
+            }
+
+            async uploadToBackend(file, jsonContent) {
+                try {
+                    // Simular upload para backend
+                    // Em um cenário real, isso seria uma chamada fetch
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    // Simular sucesso
+                    this.showSuccess(file.name);
+                    console.log('✅ Arquivo processado com sucesso:', jsonContent);
+
+                } catch (error) {
+                    console.error('❌ Erro ao enviar para backend:', error);
+                    throw new Error(`Falha no upload: ${error.message}`);
+                }
+            }
+
+            showError(fileName, message) {
+                this.updateStatus(fileName, `❌ Erro: ${message}`, 'error');
+            }
+
+            showSuccess(fileName) {
+                this.updateStatus(fileName, '✅ Importado com sucesso!', 'success');
+            }
+
+            updateStatus(fileName, message, type) {
+                const statusContainer = document.getElementById('status-container');
+                if (!statusContainer) return;
+                
+                const statusElement = document.createElement('div');
+                statusElement.className = `status-item ${type}`;
+                statusElement.textContent = `${fileName}: ${message}`;
+                
+                statusContainer.appendChild(statusElement);
+                
+                // Rolagem automática para o último status
+                statusContainer.scrollTop = statusContainer.scrollHeight;
+            }
+        }
+
+        // ========== Inicialização quando DOM estiver pronto ==========
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicializar sistemas
+            const authSystem = new AuthSystem();
+            const adminSystem = new AdminSystem();
+            const jsonUploadManager = new JSONUploadManager();
+            
+            // Configurar usuário atual
+            const currentUserElement = document.getElementById('current-user');
+            if (currentUser && currentUserElement) {
+                currentUserElement.textContent = currentUser.name || currentUser.email || 'Teddy Colóni';
+            }
+            
+            console.log('✅ Todos os sistemas inicializados com sucesso!');
+        });
+    </script>
 </body>
 </html>
