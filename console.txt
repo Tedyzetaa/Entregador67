@@ -12,3 +12,7 @@ npm --version
 cd c:\entregador67
 
 entregador67.railway.internal
+
+git add .
+git commit -m 'versão'
+git push origin main

@@ -1050,3 +1050,164 @@ function criarDadosExemplo() {
 
   console.log('📋 Dados de exemplo criados para demonstração');
 }
+// Adicione esta rota ao seu backend (server.js)
+
+// Rota para upload de arquivos JSON
+app.post('/api/upload-json', authenticate, isAdmin, async (req, res) => {
+  try {
+    console.log('📥 Recebendo upload de arquivo JSON...');
+    
+    const { fileName, fileContent } = req.body;
+
+    if (!fileName || !fileContent) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nome do arquivo e conteúdo são obrigatórios'
+      });
+    }
+
+    console.log('📂 Processando arquivo:', fileName);
+
+    let orderData;
+    try {
+      orderData = typeof fileContent === 'string' ? JSON.parse(fileContent) : fileContent;
+    } catch (parseError) {
+      return res.status(400).json({
+        success: false,
+        message: 'Arquivo JSON inválido: ' + parseError.message
+      });
+    }
+
+    // Validar estrutura básica do JSON
+    if (!orderData.customer || !orderData.items || orderData.items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Estrutura do JSON inválida. Campos customer e items são obrigatórios.'
+      });
+    }
+
+    // Processar como pedido externo
+    const externalOrderData = {
+      external_id: orderData.order_id || `upload_${Date.now()}`,
+      store_name: "Garagem 67 Bar e Conveniência",
+      store_phone: "67998668032",
+      customer: {
+        name: orderData.customer.name,
+        phone: orderData.customer.phone,
+        address: `${orderData.customer.address.street}, ${orderData.customer.address.city} - ${orderData.customer.address.state}`,
+        complement: orderData.customer.address.complement || '',
+        city: orderData.customer.address.city,
+        state: orderData.customer.address.state
+      },
+      items: orderData.items.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.subtotal
+      })),
+      total: orderData.totals.total,
+      description: orderData.items.map(item => `${item.quantity}x ${item.name}`).join(', '),
+      notes: orderData.notes || 'Pedido via upload JSON',
+      metadata: {
+        source: 'json_upload',
+        original_file: fileName,
+        upload_time: new Date().toISOString()
+      }
+    };
+
+    console.log('🔄 Processando pedido do JSON:', externalOrderData.customer.name);
+
+    // Salvar no Firebase
+    const novoPedido = {
+      description: `🛍️ Garagem 67: ${externalOrderData.description}`,
+      quantity: externalOrderData.items.reduce((sum, item) => sum + item.quantity, 1),
+      status: 'pendente',
+      createdBy: req.user.uid,
+      createdByName: req.user.name || 'Administrador',
+      customer: externalOrderData.customer,
+      external_id: externalOrderData.external_id,
+      store_info: externalOrderData.store_info,
+      items: externalOrderData.items,
+      total: externalOrderData.total,
+      notes: externalOrderData.notes,
+      metadata: externalOrderData.metadata,
+      source: 'json_upload',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      acceptedBy: null,
+      acceptedByName: null,
+      acceptedAt: null
+    };
+
+    let resultado;
+
+    if (firebaseInitialized) {
+      const docRef = await db.collection('pedidos').add(novoPedido);
+      resultado = { id: docRef.id, ...novoPedido };
+      console.log('✅ Pedido do JSON salvo no Firebase:', docRef.id);
+    } else {
+      novoPedido.id = `json_${Date.now()}`;
+      pedidos.push(novoPedido);
+      resultado = novoPedido;
+      console.log('✅ Pedido do JSON salvo em memória:', novoPedido.id);
+    }
+
+    res.json({
+      success: true,
+      message: 'Arquivo JSON processado com sucesso! Pedido criado.',
+      order: {
+        internal_id: resultado.id,
+        external_id: externalOrderData.external_id,
+        customer: externalOrderData.customer.name,
+        total: externalOrderData.total,
+        status: 'pendente'
+      },
+      stats: {
+        items: externalOrderData.items.length,
+        total: externalOrderData.total
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao processar arquivo JSON:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao processar arquivo JSON: ' + error.message
+    });
+  }
+});
+
+// Rota para listar pedidos de upload JSON
+app.get('/api/json-orders', authenticate, isAdmin, async (req, res) => {
+  try {
+    let pedidosJson = [];
+
+    if (firebaseInitialized) {
+      const snapshot = await db.collection('pedidos')
+        .where('source', '==', 'json_upload')
+        .orderBy('createdAt', 'desc')
+        .get();
+      
+      pedidosJson = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      }));
+    } else {
+      pedidosJson = pedidos.filter(p => p.source === 'json_upload')
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+
+    res.json({
+      success: true,
+      data: pedidosJson,
+      total: pedidosJson.length
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao listar pedidos JSON:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar pedidos JSON'
+    });
+  }
+});

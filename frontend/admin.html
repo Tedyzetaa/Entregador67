@@ -23,6 +23,7 @@
                 <ul>
                     <li><a href="index.html">Início</a></li>
                     <li><a href="#criar-pedido">Criar Pedido</a></li>
+                    <li><a href="#upload-json">Importar JSON</a></li>
                     <li><a href="#gerenciar-pedidos">Pedidos</a></li>
                     <li><a href="#entregadores">Entregadores</a></li>
                 </ul>
@@ -41,9 +42,6 @@
             </div>
         </div>
     </header>
-
-    <!-- Resto do conteúdo permanece igual -->
-    <!-- ... -->
 
     <!-- Conteúdo Principal -->
     <main class="main-content">
@@ -67,6 +65,39 @@
             </div>
         </section>
 
+        <!-- Upload de JSON -->
+        <section id="upload-json" class="upload-json-section">
+            <div class="container">
+                <h2 class="section-title">IMPORTAR PEDIDOS DO GARAGEM67</h2>
+                
+                <div class="upload-container">
+                    <div class="upload-area" id="upload-area">
+                        <div class="upload-icon">📁</div>
+                        <h3>Arraste arquivos JSON aqui</h3>
+                        <p>ou clique para selecionar</p>
+                        <input type="file" id="json-file-input" accept=".json" multiple style="display: none;">
+                        <button class="btn-primary" onclick="document.getElementById('json-file-input').click()">
+                            Selecionar Arquivos
+                        </button>
+                    </div>
+                    
+                    <div class="upload-info">
+                        <h4>📋 Como funciona:</h4>
+                        <ul>
+                            <li>Selecione os arquivos JSON gerados pelo Garagem67</li>
+                            <li>Os pedidos serão automaticamente importados</li>
+                            <li>Cada pedido ficará disponível para os entregadores</li>
+                            <li>Status: <span id="upload-status">Pronto para importar</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="uploaded-files" id="uploaded-files">
+                    <!-- Lista de arquivos processados -->
+                </div>
+            </div>
+        </section>
+
         <!-- Gerenciar Pedidos -->
         <section id="gerenciar-pedidos" class="gerenciar-pedidos-section">
             <div class="container">
@@ -76,6 +107,7 @@
                     <button class="btn-filter" data-status="pendente">Pendentes</button>
                     <button class="btn-filter" data-status="aceito">Aceitos</button>
                     <button class="btn-filter" data-status="entregue">Entregues</button>
+                    <button class="btn-filter" data-status="json_upload">Do Garagem67</button>
                 </div>
                 <div id="lista-pedidos-admin" class="lista-pedidos">
                     <!-- Pedidos serão carregados aqui -->
@@ -104,5 +136,6 @@
     <!-- Scripts -->
     <script src="js/auth.js"></script>
     <script src="js/admin.js"></script>
+    <script src="js/json-upload.js"></script>
 </body>
 </html>
