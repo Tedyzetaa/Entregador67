@@ -1,3 +1,4 @@
+// auth.js - Sistema de autenticação corrigido
 // Configuração do Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyAO2fMl8KCASY_oTqX5PeHnM4ivBSOFcYQ",
@@ -9,34 +10,11 @@ const firebaseConfig = {
     measurementId: "G-H6TN06K0XK"
 };
 
-// Backend URL - ATUALIZE COM SUA URL DO RAILWAY
-const BACKEND_URL = 'https://entregador67-production.up.railway.app';
-
 // Inicializar Firebase
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 const auth = firebase.auth();
-
-// Elementos DOM
-const loginBtn = document.getElementById('login-btn');
-const logoutBtn = document.getElementById('logout-btn');
-const userInfo = document.getElementById('user-info');
-const userName = document.getElementById('user-name');
-const userAvatar = document.getElementById('user-avatar');
-const loginModal = document.getElementById('login-modal');
-const cadastroModal = document.getElementById('cadastro-modal');
-const closeButtons = document.querySelectorAll('.close');
-const heroCadastroBtn = document.getElementById('hero-cadastro-btn');
-const btnGoogleLogin = document.getElementById('btn-google-login');
-const btnAppleLogin = document.getElementById('btn-apple-login');
-const btnEmailLogin = document.getElementById('btn-email-login');
-const cadastroForm = document.getElementById('cadastro-form');
-const btnSubmitCadastro = document.getElementById('btn-submit-cadastro');
-
-// Novos elementos de navegação
-const navButtons = document.getElementById('nav-buttons');
-const btnPedidos = document.getElementById('btn-pedidos');
-const btnAdmin = document.getElementById('btn-admin');
-const btnCriarPedido = document.getElementById('btn-criar-pedido');
 
 // Estado da aplicação
 let currentUser = null;
@@ -46,6 +24,7 @@ let userProfile = null;
 
 // Inicializar aplicação
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Inicializando sistema de autenticação...');
     initAuth();
     initEventListeners();
     aplicarMascaras();
@@ -58,6 +37,7 @@ function initAuth() {
         if (user) {
             currentUser = user;
             userToken = await user.getIdToken();
+            console.log('✅ Usuário autenticado:', user.email);
             await registerUserInBackend(user);
             await checkUserProfile();
             showUserInfo(user);
@@ -78,7 +58,7 @@ async function registerUserInBackend(user) {
     try {
         console.log('📝 Registrando usuário no backend...');
         
-        const response = await fetch(`${BACKEND_URL}/register-user`, {
+        const response = await fetch(`${window.BACKEND_URL}/register-user`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -98,10 +78,11 @@ async function registerUserInBackend(user) {
             return result.user;
         } else {
             console.warn('⚠️ Erro ao registrar usuário, usando role padrão');
+            return null;
         }
     } catch (error) {
         console.error('❌ Erro ao conectar com backend:', error);
-        // Continua com role padrão mesmo com erro
+        return null;
     }
 }
 
@@ -111,26 +92,24 @@ async function checkUserProfile() {
 
     try {
         // Tentar verificar se é admin primeiro
-        const adminTest = await fetch(`${BACKEND_URL}/entregadores`, {
+        const adminTest = await fetch(`${window.BACKEND_URL}/entregadores`, {
             headers: {
                 'Authorization': `Bearer ${userToken}`
             }
         });
 
         if (adminTest.ok) {
-            // Se conseguiu acessar a rota admin, é admin
             userRole = 'admin';
             console.log('✅ Usuário é ADMIN');
             return;
         }
     } catch (error) {
-        // Não é admin ou erro de conexão
         console.log('👤 Usuário é ENTREGADOR ou erro de verificação');
     }
 
     // Se não é admin, verificar se já tem cadastro de entregador
     try {
-        const response = await fetch(`${BACKEND_URL}/entregadores`, {
+        const response = await fetch(`${window.BACKEND_URL}/entregadores`, {
             headers: {
                 'Authorization': `Bearer ${userToken}`
             }
@@ -155,82 +134,147 @@ async function checkUserProfile() {
 
 // Atualizar botões de navegação baseado no role
 function updateNavigationButtons() {
+    const navButtons = document.getElementById('nav-buttons');
+    const btnPedidos = document.getElementById('btn-pedidos');
+    const btnAdmin = document.getElementById('btn-admin');
+    const btnCriarPedido = document.getElementById('btn-criar-pedido');
+
     if (!currentUser) {
         hideNavigationButtons();
         return;
     }
 
     // Mostrar área de navegação
-    navButtons.style.display = 'flex';
+    if (navButtons) {
+        navButtons.style.display = 'flex';
+    } else {
+        console.warn('⚠️ Elemento nav-buttons não encontrado');
+        return;
+    }
     
     // Botão de Pedidos (visível para todos os usuários logados)
-    btnPedidos.style.display = 'inline-block';
+    if (btnPedidos) {
+        btnPedidos.style.display = 'inline-block';
+    }
     
     // Botões de Admin (apenas para admins)
     if (userRole === 'admin') {
-        btnAdmin.style.display = 'inline-block';
-        btnCriarPedido.style.display = 'inline-block';
+        if (btnAdmin) btnAdmin.style.display = 'inline-block';
+        if (btnCriarPedido) btnCriarPedido.style.display = 'inline-block';
         console.log('👑 Botões de admin mostrados');
     } else {
-        btnAdmin.style.display = 'none';
-        btnCriarPedido.style.display = 'none';
+        if (btnAdmin) btnAdmin.style.display = 'none';
+        if (btnCriarPedido) btnCriarPedido.style.display = 'none';
         console.log('📦 Apenas botão de pedidos mostrado');
     }
 }
 
 // Esconder botões de navegação
 function hideNavigationButtons() {
-    navButtons.style.display = 'none';
-    btnPedidos.style.display = 'none';
-    btnAdmin.style.display = 'none';
-    btnCriarPedido.style.display = 'none';
+    const navButtons = document.getElementById('nav-buttons');
+    const btnPedidos = document.getElementById('btn-pedidos');
+    const btnAdmin = document.getElementById('btn-admin');
+    const btnCriarPedido = document.getElementById('btn-criar-pedido');
+
+    if (navButtons) navButtons.style.display = 'none';
+    if (btnPedidos) btnPedidos.style.display = 'none';
+    if (btnAdmin) btnAdmin.style.display = 'none';
+    if (btnCriarPedido) btnCriarPedido.style.display = 'none';
 }
 
 // Inicializar event listeners
 function initEventListeners() {
+    console.log('🔧 Configurando event listeners...');
+    
     // Botões de login
-    loginBtn.addEventListener('click', showLoginModal);
-    logoutBtn.addEventListener('click', handleLogout);
-    heroCadastroBtn.addEventListener('click', showLoginModal);
+    const loginBtn = document.getElementById('login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const heroCadastroBtn = document.getElementById('hero-cadastro-btn');
+
+    if (loginBtn) {
+        loginBtn.addEventListener('click', showLoginModal);
+    }
+    
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
+    
+    if (heroCadastroBtn) {
+        heroCadastroBtn.addEventListener('click', showLoginModal);
+    }
 
     // Fechar modais
-    closeButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
-            loginModal.style.display = 'none';
-            cadastroModal.style.display = 'none';
+    const closeButtons = document.querySelectorAll('.close');
+    if (closeButtons) {
+        closeButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const loginModal = document.getElementById('login-modal');
+                const cadastroModal = document.getElementById('cadastro-modal');
+                if (loginModal) loginModal.style.display = 'none';
+                if (cadastroModal) cadastroModal.style.display = 'none';
+            });
         });
-    });
+    }
 
     // Fechar modal ao clicar fora
     window.addEventListener('click', function(e) {
-        if (e.target === loginModal) loginModal.style.display = 'none';
-        if (e.target === cadastroModal) cadastroModal.style.display = 'none';
+        const loginModal = document.getElementById('login-modal');
+        const cadastroModal = document.getElementById('cadastro-modal');
+        if (e.target === loginModal && loginModal) loginModal.style.display = 'none';
+        if (e.target === cadastroModal && cadastroModal) cadastroModal.style.display = 'none';
     });
 
     // Login social
-    btnGoogleLogin.addEventListener('click', handleGoogleLogin);
-    btnAppleLogin.addEventListener('click', handleAppleLogin);
-    btnEmailLogin.addEventListener('click', handleEmailLogin);
+    const btnGoogleLogin = document.getElementById('btn-google-login');
+    const btnAppleLogin = document.getElementById('btn-apple-login');
+    const btnEmailLogin = document.getElementById('btn-email-login');
+
+    if (btnGoogleLogin) {
+        btnGoogleLogin.addEventListener('click', handleGoogleLogin);
+    }
+    
+    if (btnAppleLogin) {
+        btnAppleLogin.addEventListener('click', handleAppleLogin);
+    }
+    
+    if (btnEmailLogin) {
+        btnEmailLogin.addEventListener('click', handleEmailLogin);
+    }
 
     // Formulário de cadastro
-    cadastroForm.addEventListener('submit', handleCadastroSubmit);
+    const cadastroForm = document.getElementById('cadastro-form');
+    if (cadastroForm) {
+        cadastroForm.addEventListener('submit', handleCadastroSubmit);
+    }
 
     // Botões de navegação
-    btnPedidos.addEventListener('click', () => {
-        if (userRole === 'admin') {
+    const btnPedidos = document.getElementById('btn-pedidos');
+    const btnAdmin = document.getElementById('btn-admin');
+    const btnCriarPedido = document.getElementById('btn-criar-pedido');
+
+    if (btnPedidos) {
+        btnPedidos.addEventListener('click', () => {
+            if (userRole === 'admin') {
+                window.location.href = 'admin.html';
+            } else {
+                window.location.href = 'entregador.html';
+            }
+        });
+    }
+
+    if (btnAdmin) {
+        btnAdmin.addEventListener('click', () => {
             window.location.href = 'admin.html';
-        } else {
-            window.location.href = 'entregador.html';
-        }
-    });
+        });
+    }
 
-    btnAdmin.addEventListener('click', () => {
-        window.location.href = 'admin.html';
-    });
+    if (btnCriarPedido) {
+        btnCriarPedido.addEventListener('click', () => {
+            window.location.href = 'admin.html#criar-pedido';
+        });
+    }
 
-    btnCriarPedido.addEventListener('click', () => {
-        window.location.href = 'admin.html#criar-pedido';
-    });
+    console.log('✅ Event listeners configurados');
 }
 
 // Lógica do campo CNH
@@ -251,13 +295,19 @@ function initCNHLogic() {
 
 // Mostrar modal de login
 function showLoginModal() {
-    loginModal.style.display = 'flex';
+    const loginModal = document.getElementById('login-modal');
+    if (loginModal) {
+        loginModal.style.display = 'flex';
+    }
 }
 
 // Mostrar modal de cadastro
 function showCadastroModal() {
-    cadastroModal.style.display = 'flex';
-    loginModal.style.display = 'none';
+    const loginModal = document.getElementById('login-modal');
+    const cadastroModal = document.getElementById('cadastro-modal');
+    
+    if (loginModal) loginModal.style.display = 'none';
+    if (cadastroModal) cadastroModal.style.display = 'flex';
 }
 
 // Login com Google
@@ -309,6 +359,11 @@ async function handleLogout() {
 
 // Mostrar informações do usuário
 function showUserInfo(user) {
+    const userName = document.getElementById('user-name');
+    const userAvatar = document.getElementById('user-avatar');
+    const userInfo = document.getElementById('user-info');
+    const loginBtn = document.getElementById('login-btn');
+
     if (userName) userName.textContent = user.displayName || user.email;
     if (userAvatar) userAvatar.src = user.photoURL || 'https://via.placeholder.com/40';
     if (userInfo) userInfo.style.display = 'flex';
@@ -317,6 +372,9 @@ function showUserInfo(user) {
 
 // Esconder informações do usuário
 function hideUserInfo() {
+    const userInfo = document.getElementById('user-info');
+    const loginBtn = document.getElementById('login-btn');
+
     if (userInfo) userInfo.style.display = 'none';
     if (loginBtn) loginBtn.style.display = 'flex';
 }
@@ -331,7 +389,7 @@ async function handleCadastroSubmit(e) {
     }
 
     // Obter dados do formulário
-    const formData = new FormData(cadastroForm);
+    const formData = new FormData(e.target);
     const possuiCnh = formData.get('possuiCnh');
     
     const dados = {
@@ -370,14 +428,17 @@ async function handleCadastroSubmit(e) {
     dados.cep = dados.cep.replace(/\D/g, '');
 
     // Mostrar estado de carregamento
-    btnSubmitCadastro.classList.add('loading');
-    btnSubmitCadastro.disabled = true;
-    btnSubmitCadastro.textContent = 'CADASTRANDO...';
+    const btnSubmitCadastro = document.getElementById('btn-submit-cadastro');
+    if (btnSubmitCadastro) {
+        btnSubmitCadastro.classList.add('loading');
+        btnSubmitCadastro.disabled = true;
+        btnSubmitCadastro.textContent = 'CADASTRANDO...';
+    }
 
     try {
         console.log('📤 Enviando dados para cadastro:', dados);
 
-        const response = await fetch(`${BACKEND_URL}/cadastro`, {
+        const response = await fetch(`${window.BACKEND_URL}/cadastro`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -390,7 +451,8 @@ async function handleCadastroSubmit(e) {
 
         if (result.success) {
             alert('✅ Cadastro realizado com sucesso! Aguarde a aprovação.');
-            cadastroModal.style.display = 'none';
+            const cadastroModal = document.getElementById('cadastro-modal');
+            if (cadastroModal) cadastroModal.style.display = 'none';
             userProfile = result.entregador;
             updateNavigationButtons();
         } else {
@@ -401,9 +463,12 @@ async function handleCadastroSubmit(e) {
         console.error('❌ Erro ao salvar cadastro:', error);
         alert('❌ Erro ao completar cadastro: ' + error.message);
     } finally {
-        btnSubmitCadastro.classList.remove('loading');
-        btnSubmitCadastro.disabled = false;
-        btnSubmitCadastro.textContent = 'COMPLETAR CADASTRO';
+        const btnSubmitCadastro = document.getElementById('btn-submit-cadastro');
+        if (btnSubmitCadastro) {
+            btnSubmitCadastro.classList.remove('loading');
+            btnSubmitCadastro.disabled = false;
+            btnSubmitCadastro.textContent = 'COMPLETAR CADASTRO';
+        }
     }
 }
 
@@ -504,7 +569,7 @@ window.createAdmin = function() {
         return;
     }
     
-    fetch(`${BACKEND_URL}/admin/create-admin`, {
+    fetch(`${window.BACKEND_URL}/admin/create-admin`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

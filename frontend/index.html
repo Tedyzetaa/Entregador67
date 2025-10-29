@@ -7,6 +7,22 @@
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     
+    <!-- Script de inicialização - deve vir antes de outros scripts -->
+<script>
+    // Configurações globais
+    window.APP_CONFIG = {
+        BACKEND_URL: 'https://entregador67-production.up.railway.app',
+        VERSION: '2.0.0',
+        ENVIRONMENT: 'production'
+    };
+
+    // Definir BACKEND_URL globalmente
+    window.BACKEND_URL = window.APP_CONFIG.BACKEND_URL;
+
+    console.log('🚀 Sistema Entregadores67 inicializando...');
+    console.log('🔗 Backend URL:', window.BACKEND_URL);
+    console.log('📱 Versão:', window.APP_CONFIG.VERSION);
+    </script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>

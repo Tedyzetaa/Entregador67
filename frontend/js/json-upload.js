@@ -1,4 +1,4 @@
-// json-upload.js - Sistema de upload de arquivos JSON
+// json-upload.js - Sistema de upload de arquivos JSON corrigido
 class JSONUploadManager {
     constructor() {
         this.uploadedFiles = [];
@@ -13,6 +13,11 @@ class JSONUploadManager {
     setupEventListeners() {
         const uploadArea = document.getElementById('upload-area');
         const fileInput = document.getElementById('json-file-input');
+
+        if (!uploadArea || !fileInput) {
+            console.warn('⚠️ Elementos de upload não encontrados');
+            return;
+        }
 
         // Drag and drop
         uploadArea.addEventListener('dragover', (e) => {
@@ -101,7 +106,7 @@ class JSONUploadManager {
 
             const token = await user.getIdToken();
 
-            const response = await fetch('https://entregador67-production.up.railway.app/api/upload-json', {
+            const response = await fetch(`${window.BACKEND_URL}/api/upload-json`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
