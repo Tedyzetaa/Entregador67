@@ -14,5 +14,5 @@ cd c:\entregador67
 entregador67.railway.internal
 
 git add .
-git commit -m 'versão'
+git commit -m 'fix cardapio 1.9'
 git push origin main

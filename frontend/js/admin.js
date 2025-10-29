@@ -907,3 +907,144 @@ window.verDetalhesCompletos = verDetalhesCompletos;
 window.verDetalhesEntregador = verDetalhesEntregador;
 window.entrarEmContato = entrarEmContato;
 window.copiarParaAreaTransferencia = copiarParaAreaTransferencia;
+
+// Sistema de promoção para admin (para super admins)
+class AdminPromotionSystem {
+    constructor() {
+        this.setupPromotionUI();
+    }
+
+    setupPromotionUI() {
+        // Adicionar botão de promoção no painel admin
+        const adminSection = document.querySelector('#entregadores');
+        if (adminSection) {
+            const promoteButton = document.createElement('button');
+            promoteButton.className = 'btn-primary';
+            promoteButton.innerHTML = '👑 Promover para Admin';
+            promoteButton.style.marginBottom = '20px';
+            promoteButton.onclick = () => this.showPromotionModal();
+            
+            adminSection.querySelector('.section-header').appendChild(promoteButton);
+        }
+    }
+
+    showPromotionModal() {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 500px;">
+                <span class="close">&times;</span>
+                <h2>👑 Promover Usuário para Admin</h2>
+                <div class="form-group">
+                    <label for="admin-email">Email do Usuário:</label>
+                    <input type="email" id="admin-email" placeholder="Digite o email do usuário">
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-primary" onclick="window.adminPromotion.promoteUser()">Promover</button>
+                    <button class="btn-secondary" onclick="this.closest('.modal').remove()">Cancelar</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Fechar modal
+        modal.querySelector('.close').addEventListener('click', () => modal.remove());
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+    }
+
+    async promoteUser() {
+        const emailInput = document.getElementById('admin-email');
+        const email = emailInput.value.trim();
+
+        if (!email) {
+            alert('❌ Por favor, digite um email válido.');
+            return;
+        }
+
+        try {
+            const user = firebase.auth().currentUser;
+            const token = await user.getIdToken();
+
+            const response = await fetch(`${window.BACKEND_URL}/admin/promote-user`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ email })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert('✅ Usuário promovido a administrador com sucesso!');
+                document.querySelector('.modal').remove();
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (error) {
+            console.error('❌ Erro ao promover usuário:', error);
+            alert('❌ Erro ao promover usuário: ' + error.message);
+        }
+    }
+}
+
+// Adicione esta rota ao seu backend:
+app.post('/admin/promote-user', authenticate, isAdmin, async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email é obrigatório'
+            });
+        }
+
+        // Buscar usuário pelo email
+        let userDoc;
+        if (firebaseInitialized) {
+            const usersSnapshot = await db.collection('users')
+                .where('email', '==', email)
+                .get();
+
+            if (usersSnapshot.empty) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Usuário não encontrado'
+                });
+            }
+
+            userDoc = usersSnapshot.docs[0];
+            await userDoc.ref.update({
+                role: 'admin',
+                updatedAt: new Date().toISOString()
+            });
+        } else {
+            const user = users.find(u => u.email === email);
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Usuário não encontrado'
+                });
+            }
+            user.role = 'admin';
+        }
+
+        res.json({
+            success: true,
+            message: '✅ Usuário promovido a administrador!',
+            user: { email, role: 'admin' }
+        });
+
+    } catch (error) {
+        console.error('❌ Erro ao promover usuário:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro interno do servidor'
+        });
+    }
+});

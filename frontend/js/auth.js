@@ -591,3 +591,44 @@ window.createAdmin = function() {
         alert('Erro ao criar admin: ' + error.message);
     });
 };
+// Adicione esta função ao auth.js
+window.makeUserAdmin = async function(userEmail) {
+    try {
+        const user = firebase.auth().currentUser;
+        if (!user) {
+            alert('❌ Você precisa estar logado!');
+            return;
+        }
+
+        const token = await user.getIdToken();
+        
+        const response = await fetch(`${window.BACKEND_URL}/admin/create-admin`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                uid: user.uid,
+                email: userEmail || user.email,
+                name: user.displayName || 'Administrador'
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert('✅ Admin criado com sucesso! Recarregue a página.');
+            console.log('👑 Usuário promovido a admin:', result.user);
+            location.reload();
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        console.error('❌ Erro ao criar admin:', error);
+        alert('❌ Erro ao criar admin: ' + error.message);
+    }
+};
+
+// Para usar: Abra o console (F12) e execute:
+// makeUserAdmin('email@usuario.com')
