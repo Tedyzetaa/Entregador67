@@ -1,141 +1,41 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Admin - Entregadores 67</title>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
-    
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <!-- Metadados e estilos CSS -->
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <div class="logo">
-                <h1>ENTREGADORES 67</h1>
-                <p>Painel Administrativo</p>
+    <div class="container">
+        <header>
+            <!-- Cabeçalho com logo e navegação -->
+            <div class="logo">ENTREGADORES 67</div>
+            <div class="nav-buttons" id="nav-buttons">
+                <!-- Botões de navegação dinâmicos -->
             </div>
-            <nav class="nav">
-                <ul>
-                    <li><a href="index.html">Início</a></li>
-                    <li><a href="#criar-pedido">Criar Pedido</a></li>
-                    <li><a href="#upload-json">Importar JSON</a></li>
-                    <li><a href="#gerenciar-pedidos">Pedidos</a></li>
-                    <li><a href="#entregadores">Entregadores</a></li>
-                </ul>
-            </nav>
-            <div class="user-area">
-                <div class="nav-buttons">
-                    <button onclick="window.location.href='index.html'" class="btn-nav">
-                        🏠 Início
-                    </button>
-                </div>
-                <div class="user-info">
-                    <img id="user-avatar" src="" alt="Avatar" class="user-avatar">
-                    <span id="user-name" class="user-name"></span>
-                    <button id="logout-btn" class="btn-logout">Sair</button>
-                </div>
-            </div>
-        </div>
-    </header>
+        </header>
 
-    <!-- Conteúdo Principal -->
-    <main class="main-content">
-        <!-- Criar Pedido -->
-        <section id="criar-pedido" class="criar-pedido-section">
-            <div class="container">
-                <h2 class="section-title">CRIAR NOVO PEDIDO</h2>
-                <form id="form-criar-pedido" class="form-criar-pedido">
-                    <div class="form-group">
-                        <label for="descricao">Descrição do Pedido *</label>
-                        <textarea id="descricao" name="descricao" required placeholder="Ex: 2x Pizza Calabresa, 1x Coca-Cola 2L..."></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="quantidade">Quantidade *</label>
-                        <input type="number" id="quantidade" name="quantidade" min="1" value="1" required>
-                    </div>
-                    <button type="submit" class="btn-primary" id="btn-criar-pedido">
-                        📦 CRIAR PEDIDO
-                    </button>
-                </form>
-            </div>
-        </section>
-
-        <!-- Upload de JSON -->
-        <section id="upload-json" class="upload-json-section">
-            <div class="container">
-                <h2 class="section-title">IMPORTAR PEDIDOS DO GARAGEM67</h2>
+        <main>
+            <section class="upload-section" id="drop-area">
+                <!-- Área de upload de arquivos JSON -->
+                <div class="upload-text">Arraste arquivos JSON aqui ou clique para selecionar</div>
+                <button class="select-button" id="select-files">SELECIONAR ARQUIVOS</button>
+                <input type="file" id="file-input" accept=".json" multiple>
                 
-                <div class="upload-container">
-                    <div class="upload-area" id="upload-area">
-                        <div class="upload-icon">📁</div>
-                        <h3>Arraste arquivos JSON aqui</h3>
-                        <p>ou clique para selecionar</p>
-                        <input type="file" id="json-file-input" accept=".json" multiple style="display: none;">
-                        <button class="btn-primary" onclick="document.getElementById('json-file-input').click()">
-                            Selecionar Arquivos
-                        </button>
-                    </div>
-                    
-                    <div class="upload-info">
-                        <h4>📋 Como funciona:</h4>
-                        <ul>
-                            <li>Selecione os arquivos JSON gerados pelo Garagem67</li>
-                            <li>Os pedidos serão automaticamente importados</li>
-                            <li>Cada pedido ficará disponível para os entregadores</li>
-                            <li>Status: <span id="upload-status">Pronto para importar</span></li>
-                        </ul>
-                    </div>
+                <!-- Instruções de uso -->
+                <div class="how-it-works">
+                    <h3>Como funciona:</h3>
+                    <ul>
+                        <li>• Selecione os arquivos JSON do Garagem67</li>
+                        <li>• Os pedidos serão automaticamente importados</li>
+                        <li>• Cada pedido ficará disponível para os entregadores</li>
+                    </ul>
                 </div>
+            </section>
+        </main>
+    </div>
 
-                <div class="uploaded-files" id="uploaded-files">
-                    <!-- Lista de arquivos processados -->
-                </div>
-            </div>
-        </section>
-
-        <!-- Gerenciar Pedidos -->
-        <section id="gerenciar-pedidos" class="gerenciar-pedidos-section">
-            <div class="container">
-                <h2 class="section-title">GERENCIAR PEDIDOS</h2>
-                <div class="pedidos-filtros">
-                    <button class="btn-filter active" data-status="todos">Todos</button>
-                    <button class="btn-filter" data-status="pendente">Pendentes</button>
-                    <button class="btn-filter" data-status="aceito">Aceitos</button>
-                    <button class="btn-filter" data-status="entregue">Entregues</button>
-                    <button class="btn-filter" data-status="json_upload">Do Garagem67</button>
-                </div>
-                <div id="lista-pedidos-admin" class="lista-pedidos">
-                    <!-- Pedidos serão carregados aqui -->
-                </div>
-            </div>
-        </section>
-
-        <!-- Gerenciar Entregadores -->
-        <section id="entregadores" class="entregadores-section">
-            <div class="container">
-                <h2 class="section-title">GERENCIAR ENTREGADORES</h2>
-                <div id="lista-entregadores" class="lista-entregadores">
-                    <!-- Entregadores serão carregados aqui -->
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2025 Entregadores 67. Todos os direitos reservados.</p>
-        </div>
-    </footer>
-
-    <!-- Scripts -->
-    <script src="js/auth.js"></script>
-    <script src="js/admin.js"></script>
-    <script src="js/json-upload.js"></script>
+    <!-- Scripts JavaScript -->
+    <script src="auth.js"></script>
+    <script src="admin.js"></script>
+    <script src="json-upload.js"></script>
 </body>
 </html>
