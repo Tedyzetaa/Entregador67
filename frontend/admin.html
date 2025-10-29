@@ -1,487 +1,1036 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ENTREGADORES 67 - Pártel Administrativo</title>
+    <title>Painel Administrativo - Entregadores 67</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Script de inicialização -->
+    <script>
+        // Configurações globais
+        window.APP_CONFIG = {
+            BACKEND_URL: 'https://entregador67-production.up.railway.app',
+            VERSION: '2.0.0',
+            ENVIRONMENT: 'production'
+        };
+
+        // Definir BACKEND_URL globalmente
+        window.BACKEND_URL = window.APP_CONFIG.BACKEND_URL;
+
+        console.log('🚀 Sistema Entregadores67 - Painel Admin inicializando...');
+        console.log('🔗 Backend URL:', window.BACKEND_URL);
+    </script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        /* Estilos específicos para o painel administrativo */
+        .admin-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
             min-height: 100vh;
-            padding: 20px;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-
-        header {
-            background: #2c3e50;
+        .admin-sidebar {
+            background: rgba(10, 10, 10, 0.95);
             color: white;
-            padding: 20px;
-            border-bottom: 3px solid #34495e;
+            padding: 20px 0;
+            border-right: 1px solid #333;
         }
 
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: #3498db;
-        }
-
-        .nav-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .nav-button {
-            background: #34495e;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .nav-button:hover {
-            background: #3498db;
-        }
-
-        .nav-button.user {
-            background: #27ae60;
-        }
-
-        .subtitle {
-            color: #bdc3c7;
-            font-size: 14px;
-        }
-
-        main {
-            padding: 30px;
-        }
-
-        .upload-section {
-            background: #f8f9fa;
-            border: 3px dashed #dee2e6;
-            border-radius: 10px;
-            padding: 40px;
+        .admin-logo {
             text-align: center;
-            margin-bottom: 30px;
-            transition: all 0.3s;
-        }
-
-        .upload-section.highlight {
-            border-color: #3498db;
-            background: #ebf5fb;
-        }
-
-        .upload-icon {
-            font-size: 48px;
-            color: #3498db;
-            margin-bottom: 15px;
-        }
-
-        .upload-text {
-            font-size: 18px;
-            color: #2c3e50;
+            padding: 20px;
+            border-bottom: 1px solid #333;
             margin-bottom: 20px;
         }
 
-        .select-button {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background 0.3s;
+        .admin-logo h2 {
+            color: #d4af37;
+            font-family: 'Bebas Neue', cursive;
+            font-size: 1.8rem;
+            letter-spacing: 2px;
         }
 
-        .select-button:hover {
-            background: #2980b9;
+        .admin-nav ul {
+            list-style: none;
+            padding: 0;
         }
 
-        .how-it-works {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 8px;
+        .admin-nav li {
+            margin: 0;
+        }
+
+        .admin-nav a {
+            display: block;
+            color: #ddd;
+            text-decoration: none;
+            padding: 15px 25px;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .admin-nav a:hover,
+        .admin-nav a.active {
+            background: rgba(212, 175, 55, 0.1);
+            color: #d4af37;
+            border-left-color: #d4af37;
+        }
+
+        .admin-nav .nav-icon {
+            margin-right: 10px;
+            font-size: 1.1rem;
+        }
+
+        .admin-main {
+            background: rgba(17, 17, 17, 0.9);
             padding: 20px;
-            margin-top: 20px;
+            overflow-y: auto;
         }
 
-        .how-it-works h3 {
-            color: #856404;
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .admin-title {
+            color: #d4af37;
+            font-family: 'Bebas Neue', cursive;
+            font-size: 2.5rem;
+            letter-spacing: 2px;
+        }
+
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(10, 10, 10, 0.8);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            border-color: #d4af37;
+            transform: translateY(-2px);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #d4af37;
             margin-bottom: 10px;
         }
 
-        .how-it-works ul {
-            list-style: none;
-            text-align: left;
+        .stat-label {
+            color: #aaa;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .how-it-works li {
-            margin-bottom: 8px;
-            color: #856404;
+        .admin-section {
+            background: rgba(10, 10, 10, 0.8);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid #333;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #333;
+        }
+
+        .section-title {
+            color: #d4af37;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .upload-area {
+            border: 3px dashed #d4af37;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            background: rgba(212, 175, 55, 0.05);
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .upload-area.dragover {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: #f4c542;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #d4af37;
+        }
+
+        .upload-text {
+            color: #ddd;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .file-input {
+            display: none;
         }
 
         .file-status {
+            margin-top: 15px;
             padding: 10px;
-            margin: 5px 0;
             border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .file-status.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            font-size: 0.9rem;
         }
 
         .file-status.success {
-            background: #d1edf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+            background: rgba(39, 174, 96, 0.2);
+            color: #27ae60;
+            border: 1px solid #27ae60;
         }
 
-        #file-input {
-            display: none;
+        .file-status.error {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
         }
-        
-        .status-section {
-            margin-top: 20px;
-            text-align: left;
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
         }
-        
-        .status-item {
-            padding: 10px;
+
+        .filter-btn {
+            background: transparent;
+            color: #ddd;
+            border: 2px solid #333;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover,
+        .filter-btn.active {
+            background: #d4af37;
+            color: #0a0a0a;
+            border-color: #d4af37;
+        }
+
+        .pedidos-grid,
+        .entregadores-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .pedido-card,
+        .entregador-card {
+            background: rgba(17, 17, 17, 0.8);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        .pedido-card:hover,
+        .entregador-card:hover {
+            border-color: #d4af37;
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            color: #d4af37;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-pendente {
+            background: rgba(243, 156, 18, 0.2);
+            color: #f39c12;
+            border: 1px solid #f39c12;
+        }
+
+        .status-aceito {
+            background: rgba(52, 152, 219, 0.2);
+            color: #3498db;
+            border: 1px solid #3498db;
+        }
+
+        .status-entregue {
+            background: rgba(39, 174, 96, 0.2);
+            color: #27ae60;
+            border: 1px solid #27ae60;
+        }
+
+        .status-aprovado {
+            background: rgba(39, 174, 96, 0.2);
+            color: #27ae60;
+            border: 1px solid #27ae60;
+        }
+
+        .status-rejeitado {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+
+        .card-content {
+            margin-bottom: 15px;
+        }
+
+        .card-content p {
             margin: 5px 0;
-            border-radius: 5px;
-            font-size: 14px;
+            color: #ddd;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-info {
+            background: #3498db;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .admin-container {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-sidebar {
+                display: none;
+            }
+
+            .admin-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .filters {
+                flex-direction: column;
+            }
+
+            .card-actions {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-top">
-                <div class="logo">ENTREGADORES 67</div>
-                <div class="nav-buttons" id="nav-buttons">
-                    <button class="nav-button">Início</button>
-                    <button class="nav-button">Pedidos</button>
-                    <button class="nav-button">Entregadores</button>
-                    <button class="nav-button user" id="current-user">Teddy Colóni</button>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="admin-logo">
+                <h2>ENTREGADORES 67</h2>
+                <p style="color: #aaa; font-size: 0.8rem;">Painel Administrativo</p>
+            </div>
+            
+            <nav class="admin-nav">
+                <ul>
+                    <li><a href="#dashboard" class="active"><span class="nav-icon">📊</span> Dashboard</a></li>
+                    <li><a href="#pedidos"><span class="nav-icon">📦</span> Gerenciar Pedidos</a></li>
+                    <li><a href="#entregadores"><span class="nav-icon">👤</span> Entregadores</a></li>
+                    <li><a href="#importar"><span class="nav-icon">📁</span> Importar JSON</a></li>
+                    <li><a href="index.html"><span class="nav-icon">🏠</span> Voltar ao Site</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Header -->
+            <div class="admin-header">
+                <h1 class="admin-title">PAINEL ADMINISTRATIVO</h1>
+                <div class="user-area">
+                    <div id="nav-buttons" class="nav-buttons" style="display: none;">
+                        <button onclick="window.location.href='index.html'" class="btn-nav">
+                            🏠 Início
+                        </button>
+                    </div>
+                    <div class="user-info">
+                        <img id="user-avatar" src="" alt="Avatar" class="user-avatar">
+                        <span id="user-name" class="user-name"></span>
+                        <button id="logout-btn" class="btn-logout">Sair</button>
+                    </div>
                 </div>
             </div>
-            <div class="subtitle">Pártel Administrativo</div>
-        </header>
 
-        <main>
-            <section class="upload-section" id="drop-area">
-                <div class="upload-icon">📁</div>
-                <div class="upload-text">Arraste arquivos JSON aqui ou clique para selecionar</div>
-                <button class="select-button" id="select-files">SELECIONAR ARQUIVOS</button>
-                <input type="file" id="file-input" accept=".json" multiple>
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="admin-section">
+                <h2 class="section-title">📊 Dashboard</h2>
                 
-                <div class="status-section" id="status-container">
-                    <!-- Status dos arquivos será exibido aqui -->
+                <div class="admin-stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-pedidos">0</div>
+                        <div class="stat-label">Total de Pedidos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="pedidos-pendentes">0</div>
+                        <div class="stat-label">Pedidos Pendentes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="entregadores-ativos">0</div>
+                        <div class="stat-label">Entregadores Ativos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="pedidos-entregues">0</div>
+                        <div class="stat-label">Pedidos Entregues</div>
+                    </div>
                 </div>
-                
+            </section>
+
+            <!-- Importar JSON Section -->
+            <section id="importar" class="admin-section" style="display: none;">
+                <div class="section-header">
+                    <h2 class="section-title">📁 IMPORTAR PEDIDOS DO GARAGEM67</h2>
+                </div>
+
+                <div class="upload-area" id="drop-area">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Arraste arquivos JSON aqui ou clique para selecionar</div>
+                    <button class="btn-primary" id="select-files">SELECIONAR ARQUIVOS</button>
+                    <input type="file" id="file-input" accept=".json" multiple class="file-input">
+                </div>
+
+                <div id="upload-status"></div>
+
                 <div class="how-it-works">
-                    <h3>Como funciona:</h3>
-                    <ul>
-                        <li>• Selecione os arquivos JSON do Garagem67</li>
-                        <li>• Os pedidos serão automaticamente importados</li>
-                        <li>• Cada pedido ficará disponível para os entregadores</li>
+                    <h3 style="color: #d4af37; margin-bottom: 15px;">Como funciona:</h3>
+                    <ul style="color: #aaa; list-style: none; padding-left: 0;">
+                        <li style="margin-bottom: 8px;">• Selecione os arquivos JSON grandes pelo Garagem67</li>
+                        <li style="margin-bottom: 8px;">• Os pedidos serão automaticamente importados</li>
+                        <li style="margin-bottom: 8px;">• Cada pedido ficará disponível para os entregadores</li>
                     </ul>
+                </div>
+            </section>
+
+            <!-- Gerenciar Pedidos Section -->
+            <section id="pedidos" class="admin-section" style="display: none;">
+                <div class="section-header">
+                    <h2 class="section-title">📦 GERENCIAR PEDIDOS</h2>
+                    <button class="btn-primary" id="btn-atualizar-pedidos">🔄 Atualizar</button>
+                </div>
+
+                <div class="filters">
+                    <button class="filter-btn active" data-status="todos">Todos</button>
+                    <button class="filter-btn" data-status="pendente">Pendentes</button>
+                    <button class="filter-btn" data-status="aceito">Aceitos</button>
+                    <button class="filter-btn" data-status="entregue">Entregues</button>
+                    <button class="filter-btn" data-status="json_upload">JSON Upload</button>
+                </div>
+
+                <div id="lista-pedidos-admin" class="pedidos-grid">
+                    <!-- Pedidos serão carregados aqui -->
+                </div>
+            </section>
+
+            <!-- Entregadores Section -->
+            <section id="entregadores" class="admin-section" style="display: none;">
+                <div class="section-header">
+                    <h2 class="section-title">👤 GERENCIAR ENTREGADORES</h2>
+                    <button class="btn-primary" id="btn-atualizar-entregadores">🔄 Atualizar</button>
+                </div>
+
+                <div class="filters">
+                    <button class="filter-btn active" data-status="todos">Todos</button>
+                    <button class="filter-btn" data-status="pendente">Pendentes</button>
+                    <button class="filter-btn" data-status="aprovado">Aprovados</button>
+                    <button class="filter-btn" data-status="rejeitado">Rejeitados</button>
+                </div>
+
+                <div id="lista-entregadores" class="entregadores-grid">
+                    <!-- Entregadores serão carregados aqui -->
                 </div>
             </section>
         </main>
     </div>
 
+    <!-- Scripts -->
     <script>
-        // ========== auth.js ==========
-        class AuthSystem {
-            constructor() {
-                this.currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-                this.initialize();
-            }
+        // ==================== CONFIGURAÇÃO FIREBASE ====================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAO2fMl8KCASY_oTqX5PeHnM4ivBSOFcYQ",
+            authDomain: "entregador67-859a4.firebaseapp.com",
+            projectId: "entregador67-859a4",
+            storageBucket: "entregador67-859a4.firebasestorage.app",
+            messagingSenderId: "314820422641",
+            appId: "1:314820422641:web:12685b9bf66287a7aaf250",
+            measurementId: "G-H6TN06K0XK"
+        };
 
-            initialize() {
-                console.log('🚀 Inicializando sistema de autenticação...');
-                this.setupEventListeners();
-                this.checkExistingAuth();
-            }
+        // Inicializar Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
 
-            setupEventListeners() {
-                console.log('🔧 Configurando event listeners...');
-                
-                // Verificar se elementos existem antes de adicionar listeners
-                const loginForm = document.getElementById('login-form');
-                const logoutBtn = document.getElementById('logout-btn');
-                const navButtons = document.getElementById('nav-buttons');
+        // ==================== VARIÁVEIS GLOBAIS ====================
+        let currentUser = null;
+        let userToken = null;
+        let allPedidos = [];
+        let allEntregadores = [];
 
-                if (loginForm) {
-                    loginForm.addEventListener('submit', (e) => this.handleLogin(e));
-                }
+        // ==================== INICIALIZAÇÃO ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Inicializando Painel Administrativo...');
+            initAdmin();
+            initNavigation();
+            initJSONUpload();
+        });
 
-                if (logoutBtn) {
-                    logoutBtn.addEventListener('click', () => this.handleLogout());
-                }
-
-                if (navButtons) {
-                    this.updateNavigationButtons();
-                } else {
-                    console.log('⚠️ Elemento nav-buttons não encontrado');
-                }
-
-                console.log('✅ Event listeners configurados');
-            }
-
-            async checkExistingAuth() {
-                if (this.currentUser && this.currentUser.email) {
-                    console.log('✅ Usuário autenticado:', this.currentUser.email);
-                    await this.registerUserInBackend(this.currentUser);
-                    this.updateNavigationButtons();
-                }
-            }
-
-            async handleLogin(event) {
-                event.preventDefault();
-                
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-
-                try {
-                    // Simular autenticação
-                    const user = {
-                        email: email,
-                        name: email.split('@')[0],
-                        role: 'admin'
-                    };
-
-                    this.currentUser = user;
-                    localStorage.setItem('currentUser', JSON.stringify(user));
+        // ==================== SISTEMA DE AUTENTICAÇÃO ====================
+        async function initAdmin() {
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    currentUser = user;
+                    userToken = await user.getIdToken();
                     
-                    console.log('✅ Login realizado com sucesso');
-                    await this.registerUserInBackend(user);
-                    this.updateNavigationButtons();
-                    
-                } catch (error) {
-                    console.error('❌ Erro no login:', error);
-                }
-            }
-
-            async registerUserInBackend(user) {
-                try {
-                    console.log('📝 Registrando usuário no backend...');
-                    
-                    const response = await fetch('/api/register-user', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            email: user.email,
-                            name: user.name,
-                            role: user.role || 'user'
-                        })
-                    });
-
-                    if (response.ok) {
-                        console.log('✅ Usuário registrado no backend');
+                    // Verificar se é admin
+                    if (await verificarAdmin()) {
+                        showUserInfo(user);
+                        await carregarDashboard();
+                        showSection('dashboard');
                     } else {
-                        throw new Error(`HTTP ${response.status}`);
+                        alert('❌ Acesso negado. Apenas administradores podem acessar esta página.');
+                        window.location.href = 'index.html';
                     }
-                } catch (error) {
-                    console.log('⚠️ Erro ao registrar usuário, usando role padrão');
-                    // Continuar mesmo com erro no backend
+                } else {
+                    window.location.href = 'index.html';
                 }
+            });
+        }
+
+        async function verificarAdmin() {
+            try {
+                const response = await fetch(`${window.BACKEND_URL}/entregadores`, {
+                    headers: {
+                        'Authorization': `Bearer ${userToken}`
+                    }
+                });
+                return response.ok;
+            } catch (error) {
+                console.error('❌ Erro ao verificar admin:', error);
+                return false;
+            }
+        }
+
+        function showUserInfo(user) {
+            const userName = document.getElementById('user-name');
+            const userAvatar = document.getElementById('user-avatar');
+            const logoutBtn = document.getElementById('logout-btn');
+
+            if (userName) userName.textContent = user.displayName || user.email;
+            if (userAvatar) userAvatar.src = user.photoURL || 'https://via.placeholder.com/40';
+            
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    auth.signOut();
+                    window.location.href = 'index.html';
+                });
+            }
+        }
+
+        // ==================== NAVEGAÇÃO ====================
+        function initNavigation() {
+            // Navegação entre seções
+            const navLinks = document.querySelectorAll('.admin-nav a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const sectionId = link.getAttribute('href').substring(1);
+                    
+                    // Atualizar links ativos
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    
+                    // Mostrar seção correspondente
+                    showSection(sectionId);
+                });
+            });
+
+            // Botão atualizar pedidos
+            const btnAtualizarPedidos = document.getElementById('btn-atualizar-pedidos');
+            if (btnAtualizarPedidos) {
+                btnAtualizarPedidos.addEventListener('click', carregarPedidosAdmin);
             }
 
-            updateNavigationButtons() {
-                const navButtons = document.getElementById('nav-buttons');
-                const currentUserElement = document.getElementById('current-user');
+            // Botão atualizar entregadores
+            const btnAtualizarEntregadores = document.getElementById('btn-atualizar-entregadores');
+            if (btnAtualizarEntregadores) {
+                btnAtualizarEntregadores.addEventListener('click', carregarEntregadores);
+            }
+
+            // Filtros
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    const status = btn.getAttribute('data-status');
+                    if (document.querySelector('#pedidos').style.display !== 'none') {
+                        filtrarPedidos(status);
+                    } else if (document.querySelector('#entregadores').style.display !== 'none') {
+                        filtrarEntregadores(status);
+                    }
+                });
+            });
+        }
+
+        function showSection(sectionId) {
+            // Esconder todas as seções
+            const sections = document.querySelectorAll('.admin-section');
+            sections.forEach(section => {
+                section.style.display = 'none';
+            });
+
+            // Mostrar seção selecionada
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.style.display = 'block';
                 
-                if (!navButtons) {
-                    console.log('⚠️ Elemento nav-buttons não encontrado');
-                    return;
+                // Carregar dados específicos da seção
+                switch(sectionId) {
+                    case 'dashboard':
+                        carregarDashboard();
+                        break;
+                    case 'pedidos':
+                        carregarPedidosAdmin();
+                        break;
+                    case 'entregadores':
+                        carregarEntregadores();
+                        break;
+                    case 'importar':
+                        // Já inicializado
+                        break;
                 }
-
-                if (this.currentUser) {
-                    if (currentUserElement) {
-                        currentUserElement.textContent = this.currentUser.name || this.currentUser.email;
-                    }
-                }
-            }
-
-            handleLogout() {
-                this.currentUser = null;
-                localStorage.removeItem('currentUser');
-                this.updateNavigationButtons();
-                console.log('✅ Logout realizado');
             }
         }
 
-        // ========== admin.js ==========
-        // Verificar se currentUser já existe antes de declarar
-        let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-
-        class AdminSystem {
-            constructor() {
-                this.initialize();
-            }
-
-            initialize() {
-                console.log('🔄 Inicializando sistema administrativo...');
-                this.checkAuthentication();
-                this.loadEntregadores();
-            }
-
-            async checkAuthentication() {
-                try {
-                    // Verificar autenticação existente
-                    const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
-                    if (user && user.email) {
-                        currentUser = user;
-                        console.log('✅ Usuário autenticado:', user.email);
-                        this.updateUI(user);
+        // ==================== DASHBOARD ====================
+        async function carregarDashboard() {
+            try {
+                // Carregar pedidos
+                const pedidosResponse = await fetch(`${window.BACKEND_URL}/pedidos`, {
+                    headers: {
+                        'Authorization': `Bearer ${userToken}`
                     }
-                } catch (error) {
-                    console.error('❌ Erro na verificação de autenticação:', error);
-                }
-            }
+                });
 
-            updateUI(user) {
-                // Atualizar interface do usuário
-                const userElement = document.getElementById('current-user');
-                if (userElement) {
-                    userElement.textContent = user.name || user.email;
-                }
-            }
-
-            async loadEntregadores() {
-                try {
-                    const response = await fetch('/api/entregadores');
-                    if (response.ok) {
-                        const entregadores = await response.json();
-                        this.renderEntregadores(entregadores);
+                if (pedidosResponse.ok) {
+                    const result = await pedidosResponse.json();
+                    if (result.success) {
+                        const pedidos = result.data;
+                        
+                        // Atualizar estatísticas
+                        document.getElementById('total-pedidos').textContent = pedidos.length;
+                        document.getElementById('pedidos-pendentes').textContent = 
+                            pedidos.filter(p => p.status === 'pendente').length;
+                        document.getElementById('pedidos-entregues').textContent = 
+                            pedidos.filter(p => p.status === 'entregue').length;
                     }
-                } catch (error) {
-                    console.log('⚠️ Não foi possível carregar entregadores:', error);
                 }
-            }
 
-            renderEntregadores(entregadores) {
-                // Implementar renderização dos entregadores
-                console.log('📋 Entregadores carregados:', entregadores);
+                // Carregar entregadores
+                const entregadoresResponse = await fetch(`${window.BACKEND_URL}/entregadores`, {
+                    headers: {
+                        'Authorization': `Bearer ${userToken}`
+                    }
+                });
+
+                if (entregadoresResponse.ok) {
+                    const result = await entregadoresResponse.json();
+                    if (result.success) {
+                        const entregadores = result.data;
+                        document.getElementById('entregadores-ativos').textContent = 
+                            entregadores.filter(e => e.status === 'aprovado').length;
+                    }
+                }
+
+            } catch (error) {
+                console.error('❌ Erro ao carregar dashboard:', error);
             }
         }
 
-        // ========== json-upload.js ==========
-        class JSONUploadManager {
-            constructor() {
-                this.initializeEventListeners();
-                console.log('📁 Inicializando JSONUploadManager...');
+        // ==================== GERENCIAR PEDIDOS ====================
+        async function carregarPedidosAdmin() {
+            try {
+                const response = await fetch(`${window.BACKEND_URL}/pedidos`, {
+                    headers: {
+                        'Authorization': `Bearer ${userToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        allPedidos = result.data;
+                        aplicarFiltroPedidos();
+                    }
+                } else {
+                    throw new Error('Erro ao carregar pedidos');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao carregar pedidos:', error);
+                showNotification('❌ Erro ao carregar pedidos', 'error');
+            }
+        }
+
+        function aplicarFiltroPedidos() {
+            const activeFilter = document.querySelector('#pedidos .filter-btn.active');
+            const status = activeFilter ? activeFilter.getAttribute('data-status') : 'todos';
+            filtrarPedidos(status);
+        }
+
+        function filtrarPedidos(status) {
+            let pedidosFiltrados = allPedidos;
+
+            if (status !== 'todos') {
+                if (status === 'json_upload') {
+                    pedidosFiltrados = allPedidos.filter(pedido => 
+                        pedido.source === 'json_upload' || pedido.source === 'garagem67'
+                    );
+                } else {
+                    pedidosFiltrados = allPedidos.filter(pedido => pedido.status === status);
+                }
             }
 
-            initializeEventListeners() {
-                const dropArea = document.getElementById('drop-area');
-                const fileInput = document.getElementById('file-input');
-                const selectButton = document.getElementById('select-files');
+            exibirPedidosAdmin(pedidosFiltrados);
+        }
 
-                // Event listeners para drag and drop
-                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                    dropArea.addEventListener(eventName, this.preventDefaults, false);
-                });
+        function exibirPedidosAdmin(pedidos) {
+            const container = document.getElementById('lista-pedidos-admin');
+            if (!container) return;
 
-                ['dragenter', 'dragover'].forEach(eventName => {
-                    dropArea.addEventListener(eventName, () => this.highlight(dropArea), false);
-                });
-
-                ['dragleave', 'drop'].forEach(eventName => {
-                    dropArea.addEventListener(eventName, () => this.unhighlight(dropArea), false);
-                });
-
-                dropArea.addEventListener('drop', (e) => this.handleDrop(e), false);
-
-                // Event listeners para seleção de arquivos
-                selectButton.addEventListener('click', () => fileInput.click(), false);
-                fileInput.addEventListener('change', (e) => this.handleFiles(e.target.files), false);
+            if (pedidos.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📝</div>
+                        <h3>Nenhum pedido encontrado</h3>
+                        <p>${getMensagemEstadoVazioPedidos()}</p>
+                    </div>
+                `;
+                return;
             }
 
-            preventDefaults(e) {
+            // Ordenar por data (mais recente primeiro)
+            pedidos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+            container.innerHTML = pedidos.map(pedido => `
+                <div class="pedido-card">
+                    <div class="card-header">
+                        <div class="card-title">Pedido #${pedido.id.substring(0, 8)}</div>
+                        <div class="status-badge status-${pedido.status}">
+                            ${formatarStatus(pedido.status)}
+                        </div>
+                    </div>
+                    
+                    <div class="card-content">
+                        <p><strong>📦 Descrição:</strong> ${pedido.description}</p>
+                        <p><strong>🔢 Quantidade:</strong> ${pedido.quantity}</p>
+                        
+                        ${pedido.customer ? `
+                            <p><strong>👤 Cliente:</strong> ${pedido.customer.name}</p>
+                            <p><strong>📞 Telefone:</strong> ${pedido.customer.phone}</p>
+                        ` : ''}
+                        
+                        ${pedido.total ? `<p><strong>💰 Total:</strong> R$ ${parseFloat(pedido.total).toFixed(2)}</p>` : ''}
+                        
+                        <p><strong>🕐 Criado em:</strong> ${formatarData(pedido.createdAt)}</p>
+                        
+                        ${pedido.acceptedByName ? `
+                            <p><strong>✅ Aceito por:</strong> ${pedido.acceptedByName}</p>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="card-actions">
+                        ${pedido.status === 'pendente' ? `
+                            <button class="btn-action btn-danger" onclick="excluirPedido('${pedido.id}')">
+                                🗑️ Excluir
+                            </button>
+                        ` : ''}
+                        
+                        ${pedido.status === 'aceito' ? `
+                            <button class="btn-action btn-warning" onclick="atualizarStatusPedido('${pedido.id}', 'em_rota')">
+                                🚚 Em Rota
+                            </button>
+                        ` : ''}
+                        
+                        ${pedido.status === 'em_rota' ? `
+                            <button class="btn-action btn-success" onclick="atualizarStatusPedido('${pedido.id}', 'entregue')">
+                                ✅ Entregue
+                            </button>
+                        ` : ''}
+                        
+                        <button class="btn-action btn-info" onclick="verDetalhesPedido('${pedido.id}')">
+                            📋 Detalhes
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ==================== GERENCIAR ENTREGADORES ====================
+        async function carregarEntregadores() {
+            try {
+                const response = await fetch(`${window.BACKEND_URL}/entregadores`, {
+                    headers: {
+                        'Authorization': `Bearer ${userToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        allEntregadores = result.data;
+                        aplicarFiltroEntregadores();
+                    }
+                } else {
+                    throw new Error('Erro ao carregar entregadores');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao carregar entregadores:', error);
+                showNotification('❌ Erro ao carregar entregadores', 'error');
+            }
+        }
+
+        function aplicarFiltroEntregadores() {
+            const activeFilter = document.querySelector('#entregadores .filter-btn.active');
+            const status = activeFilter ? activeFilter.getAttribute('data-status') : 'todos';
+            filtrarEntregadores(status);
+        }
+
+        function filtrarEntregadores(status) {
+            let entregadoresFiltrados = allEntregadores;
+
+            if (status !== 'todos') {
+                entregadoresFiltrados = allEntregadores.filter(entregador => entregador.status === status);
+            }
+
+            exibirEntregadores(entregadoresFiltrados);
+        }
+
+        function exibirEntregadores(entregadores) {
+            const container = document.getElementById('lista-entregadores');
+            if (!container) return;
+
+            if (entregadores.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">👤</div>
+                        <h3>Nenhum entregador encontrado</h3>
+                        <p>${getMensagemEstadoVazioEntregadores()}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = entregadores.map(entregador => `
+                <div class="entregador-card">
+                    <div class="card-header">
+                        <div class="card-title">${entregador.nome}</div>
+                        <div class="status-badge status-${entregador.status}">
+                            ${formatarStatusEntregador(entregador.status)}
+                        </div>
+                    </div>
+                    
+                    <div class="card-content">
+                        <p><strong>📧 Email:</strong> ${entregador.userEmail}</p>
+                        <p><strong>📞 Telefone:</strong> ${formatarTelefone(entregador.telefone)}</p>
+                        <p><strong>🚗 Veículo:</strong> ${formatarVeiculo(entregador.veiculo)}</p>
+                        <p><strong>📍 Localização:</strong> ${entregador.cidade} - ${entregador.estado}</p>
+                        <p><strong>🕐 Cadastrado em:</strong> ${formatarData(entregador.dataCadastro)}</p>
+                    </div>
+                    
+                    <div class="card-actions">
+                        ${entregador.status === 'pendente' ? `
+                            <button class="btn-action btn-success" onclick="aprovarEntregador('${entregador.id}')">
+                                ✅ Aprovar
+                            </button>
+                            <button class="btn-action btn-danger" onclick="rejeitarEntregador('${entregador.id}')">
+                                ❌ Rejeitar
+                            </button>
+                        ` : ''}
+                        
+                        ${entregador.status === 'aprovado' ? `
+                            <button class="btn-action btn-warning" onclick="suspenderEntregador('${entregador.id}')">
+                                ⏸️ Suspender
+                            </button>
+                        ` : ''}
+                        
+                        ${(entregador.status === 'rejeitado' || entregador.status === 'suspenso') ? `
+                            <button class="btn-action btn-success" onclick="reativarEntregador('${entregador.id}')">
+                                🔄 Reativar
+                            </button>
+                        ` : ''}
+                        
+                        <button class="btn-action btn-info" onclick="verDetalhesEntregador('${entregador.id}')">
+                            👁️ Detalhes
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ==================== UPLOAD DE JSON ====================
+        function initJSONUpload() {
+            const dropArea = document.getElementById('drop-area');
+            const fileInput = document.getElementById('file-input');
+            const selectButton = document.getElementById('select-files');
+
+            // Event listeners para drag and drop
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => highlight(dropArea), false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => unhighlight(dropArea), false);
+            });
+
+            dropArea.addEventListener('drop', handleDrop, false);
+
+            // Event listeners para seleção de arquivos
+            selectButton.addEventListener('click', () => fileInput.click(), false);
+            fileInput.addEventListener('change', (e) => handleFiles(e.target.files), false);
+
+            function preventDefaults(e) {
                 e.preventDefault();
                 e.stopPropagation();
             }
 
-            highlight(element) {
-                element.classList.add('highlight');
+            function highlight(element) {
+                element.classList.add('dragover');
             }
 
-            unhighlight(element) {
-                element.classList.remove('highlight');
+            function unhighlight(element) {
+                element.classList.remove('dragover');
             }
 
-            handleDrop(e) {
+            function handleDrop(e) {
                 const dt = e.dataTransfer;
                 const files = dt.files;
-                this.handleFiles(files);
+                handleFiles(files);
             }
 
-            handleFiles(files) {
+            function handleFiles(files) {
                 if (!files.length) return;
 
                 console.log(`📂 ${files.length} arquivo(s) selecionado(s)`);
+                showNotification(`📂 ${files.length} arquivo(s) selecionado(s)`, 'info');
 
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
-                    this.processFile(file);
+                    processFile(file);
                 }
             }
 
-            async processFile(file) {
-                console.log('🔄 Processando arquivo:', file.name, file);
+            async function processFile(file) {
+                console.log('🔄 Processando arquivo:', file.name);
 
                 // Verificar se é um arquivo JSON
                 if (!file.name.endsWith('.json')) {
-                    this.showError(file.name, 'Arquivo não é um JSON');
+                    showError(file.name, 'Arquivo não é um JSON');
                     return;
                 }
 
                 try {
-                    // Primeiro, validar o JSON
-                    const jsonContent = await this.validateJSON(file);
+                    // Validar o JSON
+                    const jsonContent = await validateJSON(file);
                     
-                    // Se for válido, enviar para o backend
-                    await this.uploadToBackend(file, jsonContent);
+                    // Enviar para o backend
+                    await uploadToBackend(file, jsonContent);
                     
                 } catch (error) {
                     console.error('❌ Erro ao processar arquivo:', error);
-                    this.showError(file.name, error.message);
+                    showError(file.name, error.message);
                 }
             }
 
-            async validateJSON(file) {
+            function validateJSON(file) {
                 return new Promise((resolve, reject) => {
                     const reader = new FileReader();
 
@@ -490,9 +1039,6 @@
                             const json = JSON.parse(e.target.result);
                             
                             // Validar estrutura básica do JSON
-                            if (!json.order_id) {
-                                throw new Error('JSON não possui order_id');
-                            }
                             if (!json.customer) {
                                 throw new Error('JSON não possui customer');
                             }
@@ -511,15 +1057,35 @@
                 });
             }
 
-            async uploadToBackend(file, jsonContent) {
+            async function uploadToBackend(file, jsonContent) {
                 try {
-                    // Simular upload para backend
-                    // Em um cenário real, isso seria uma chamada fetch
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    
-                    // Simular sucesso
-                    this.showSuccess(file.name);
-                    console.log('✅ Arquivo processado com sucesso:', jsonContent);
+                    showNotification(`📤 Enviando ${file.name}...`, 'info');
+
+                    const response = await fetch(`${window.BACKEND_URL}/api/upload-json`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${userToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            fileName: file.name,
+                            fileContent: jsonContent
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        showSuccess(file.name);
+                        showNotification('✅ Arquivo processado com sucesso!', 'success');
+                        
+                        // Recarregar a lista de pedidos se estiver na seção de pedidos
+                        if (document.querySelector('#pedidos').style.display !== 'none') {
+                            carregarPedidosAdmin();
+                        }
+                    } else {
+                        throw new Error(result.message);
+                    }
 
                 } catch (error) {
                     console.error('❌ Erro ao enviar para backend:', error);
@@ -527,44 +1093,317 @@
                 }
             }
 
-            showError(fileName, message) {
-                this.updateStatus(fileName, `❌ Erro: ${message}`, 'error');
+            function showError(fileName, message) {
+                updateStatus(fileName, `❌ Erro: ${message}`, 'error');
+                showNotification(`❌ Erro em ${fileName}: ${message}`, 'error');
             }
 
-            showSuccess(fileName) {
-                this.updateStatus(fileName, '✅ Importado com sucesso!', 'success');
+            function showSuccess(fileName) {
+                updateStatus(fileName, '✅ Importado com sucesso!', 'success');
             }
 
-            updateStatus(fileName, message, type) {
-                const statusContainer = document.getElementById('status-container');
-                if (!statusContainer) return;
-                
+            function updateStatus(fileName, message, type) {
+                const statusContainer = document.getElementById('upload-status');
                 const statusElement = document.createElement('div');
-                statusElement.className = `status-item ${type}`;
+                statusElement.className = `file-status ${type}`;
                 statusElement.textContent = `${fileName}: ${message}`;
-                
                 statusContainer.appendChild(statusElement);
-                
-                // Rolagem automática para o último status
-                statusContainer.scrollTop = statusContainer.scrollHeight;
             }
         }
 
-        // ========== Inicialização quando DOM estiver pronto ==========
-        document.addEventListener('DOMContentLoaded', () => {
-            // Inicializar sistemas
-            const authSystem = new AuthSystem();
-            const adminSystem = new AdminSystem();
-            const jsonUploadManager = new JSONUploadManager();
+        // ==================== FUNÇÕES ADMINISTRATIVAS ====================
+        async function excluirPedido(pedidoId) {
+            if (!confirm('Tem certeza que deseja excluir este pedido? Esta ação não pode ser desfeita.')) return;
             
-            // Configurar usuário atual
-            const currentUserElement = document.getElementById('current-user');
-            if (currentUser && currentUserElement) {
-                currentUserElement.textContent = currentUser.name || currentUser.email || 'Teddy Colóni';
+            try {
+                const response = await fetch(`${window.BACKEND_URL}/pedidos/${pedidoId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${userToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    showNotification('✅ Pedido excluído com sucesso!', 'success');
+                    carregarPedidosAdmin();
+                } else {
+                    throw new Error('Erro ao excluir pedido');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao excluir pedido:', error);
+                showNotification('❌ Erro ao excluir pedido.', 'error');
             }
+        }
+
+        async function atualizarStatusPedido(pedidoId, novoStatus) {
+            try {
+                const response = await fetch(`${window.BACKEND_URL}/pedidos/${pedidoId}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${userToken}`
+                    },
+                    body: JSON.stringify({ status: novoStatus })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification(`✅ Status do pedido atualizado para: ${formatarStatus(novoStatus)}`, 'success');
+                    carregarPedidosAdmin();
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('❌ Erro ao atualizar status:', error);
+                showNotification('❌ Erro ao atualizar status: ' + error.message, 'error');
+            }
+        }
+
+        async function aprovarEntregador(entregadorId) {
+            if (!confirm('Deseja aprovar este entregador?')) return;
             
-            console.log('✅ Todos os sistemas inicializados com sucesso!');
-        });
+            try {
+                const response = await fetch(`${window.BACKEND_URL}/entregadores/${entregadorId}/aprovar`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${userToken}`
+                    },
+                    body: JSON.stringify({ aprovado: true })
+                });
+
+                if (response.ok) {
+                    showNotification('✅ Entregador aprovado com sucesso!', 'success');
+                    carregarEntregadores();
+                } else {
+                    throw new Error('Erro ao aprovar entregador');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao aprovar entregador:', error);
+                showNotification('❌ Erro ao aprovar entregador.', 'error');
+            }
+        }
+
+        async function rejeitarEntregador(entregadorId) {
+            if (!confirm('Deseja rejeitar este entregador?')) return;
+            
+            try {
+                const response = await fetch(`${window.BACKEND_URL}/entregadores/${entregadorId}/aprovar`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${userToken}`
+                    },
+                    body: JSON.stringify({ aprovado: false })
+                });
+
+                if (response.ok) {
+                    showNotification('❌ Entregador rejeitado.', 'success');
+                    carregarEntregadores();
+                } else {
+                    throw new Error('Erro ao rejeitar entregador');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao rejeitar entregador:', error);
+                showNotification('❌ Erro ao rejeitar entregador.', 'error');
+            }
+        }
+
+        function suspenderEntregador(entregadorId) {
+            showNotification('⏸️ Funcionalidade de suspensão em desenvolvimento', 'info');
+        }
+
+        function reativarEntregador(entregadorId) {
+            showNotification('🔄 Funcionalidade de reativação em desenvolvimento', 'info');
+        }
+
+        function verDetalhesPedido(pedidoId) {
+            const pedido = allPedidos.find(p => p.id === pedidoId);
+            if (pedido) {
+                const detalhes = JSON.stringify(pedido, null, 2);
+                console.log('📋 Detalhes completos do pedido:', pedido);
+                alert('Detalhes do pedido (ver console para informações completas)');
+            }
+        }
+
+        function verDetalhesEntregador(entregadorId) {
+            showNotification('👤 Visualizando detalhes do entregador', 'info');
+        }
+
+        // ==================== FUNÇÕES AUXILIARES ====================
+        function formatarData(dataString) {
+            if (!dataString) return 'N/A';
+            const data = new Date(dataString);
+            return data.toLocaleString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatarStatus(status) {
+            const statusMap = {
+                'pendente': '⏳ Pendente',
+                'aceito': '✅ Aceito',
+                'em_rota': '🚚 Em Rota',
+                'entregue': '🎉 Entregue',
+                'cancelado': '❌ Cancelado'
+            };
+            return statusMap[status] || status;
+        }
+
+        function formatarStatusEntregador(status) {
+            const statusMap = {
+                'pendente': '⏳ Pendente',
+                'aprovado': '✅ Aprovado',
+                'rejeitado': '❌ Rejeitado',
+                'suspenso': '⏸️ Suspenso'
+            };
+            return statusMap[status] || status;
+        }
+
+        function formatarTelefone(telefone) {
+            if (!telefone) return 'N/A';
+            const cleaned = telefone.replace(/\D/g, '');
+            if (cleaned.length === 11) {
+                return `(${cleaned.substring(0,2)}) ${cleaned.substring(2,7)}-${cleaned.substring(7)}`;
+            }
+            return telefone;
+        }
+
+        function formatarVeiculo(veiculo) {
+            const veiculoMap = {
+                'moto': '🏍️ Moto',
+                'carro': '🚗 Carro',
+                'bicicleta': '🚴 Bicicleta',
+                'caminhao': '🚚 Caminhão'
+            };
+            return veiculoMap[veiculo] || veiculo;
+        }
+
+        function getMensagemEstadoVazioPedidos() {
+            const activeFilter = document.querySelector('#pedidos .filter-btn.active');
+            const status = activeFilter ? activeFilter.getAttribute('data-status') : 'todos';
+            
+            const messages = {
+                'todos': 'Não há pedidos no sistema.',
+                'pendente': 'Não há pedidos pendentes no momento.',
+                'aceito': 'Não há pedidos aceitos no momento.',
+                'entregue': 'Não há pedidos entregues no momento.',
+                'json_upload': 'Não há pedidos importados do Garagem67.'
+            };
+            
+            return messages[status] || 'Não há pedidos para o filtro selecionado.';
+        }
+
+        function getMensagemEstadoVazioEntregadores() {
+            const activeFilter = document.querySelector('#entregadores .filter-btn.active');
+            const status = activeFilter ? activeFilter.getAttribute('data-status') : 'todos';
+            
+            const messages = {
+                'todos': 'Não há entregadores cadastrados.',
+                'pendente': 'Não há entregadores pendentes de aprovação.',
+                'aprovado': 'Não há entregadores aprovados.',
+                'rejeitado': 'Não há entregadores rejeitados.'
+            };
+            
+            return messages[status] || 'Não há entregadores para o filtro selecionado.';
+        }
+
+        function showNotification(message, type = 'info') {
+            // Remover notificações existentes
+            document.querySelectorAll('.notification').forEach(notification => {
+                notification.remove();
+            });
+
+            // Criar notificação
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <span>${message}</span>
+                <button class="notification-close" onclick="this.parentElement.remove()">×</button>
+            `;
+
+            // Adicionar estilos se não existirem
+            if (!document.querySelector('#notification-styles')) {
+                const styles = document.createElement('style');
+                styles.id = 'notification-styles';
+                styles.textContent = `
+                    .notification {
+                        position: fixed;
+                        top: 100px;
+                        right: 20px;
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        font-weight: bold;
+                        z-index: 10000;
+                        max-width: 400px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        animation: slideInRight 0.3s ease;
+                    }
+                    .notification.success {
+                        background: #27ae60;
+                        color: white;
+                    }
+                    .notification.error {
+                        background: #e74c3c;
+                        color: white;
+                    }
+                    .notification.info {
+                        background: #3498db;
+                        color: white;
+                    }
+                    .notification.warning {
+                        background: #f39c12;
+                        color: white;
+                    }
+                    .notification-close {
+                        background: none;
+                        border: none;
+                        color: white;
+                        font-size: 1.2em;
+                        cursor: pointer;
+                        margin-left: 10px;
+                    }
+                    @keyframes slideInRight {
+                        from {
+                            transform: translateX(400px);
+                            opacity: 0;
+                        }
+                        to {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                    }
+                `;
+                document.head.appendChild(styles);
+            }
+
+            document.body.appendChild(notification);
+
+            // Remover automaticamente após 5 segundos
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // Exportar funções para uso global
+        window.excluirPedido = excluirPedido;
+        window.atualizarStatusPedido = atualizarStatusPedido;
+        window.aprovarEntregador = aprovarEntregador;
+        window.rejeitarEntregador = rejeitarEntregador;
+        window.suspenderEntregador = suspenderEntregador;
+        window.reativarEntregador = reativarEntregador;
+        window.verDetalhesPedido = verDetalhesPedido;
+        window.verDetalhesEntregador = verDetalhesEntregador;
     </script>
 </body>
 </html>
