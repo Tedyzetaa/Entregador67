@@ -1,3 +1,4 @@
+// Adicione esta linha NO INÍCIO do seu server.js, após as importações
 const express = require('express');
 const cors = require('cors');
 const admin = require('firebase-admin');
@@ -5,31 +6,42 @@ const admin = require('firebase-admin');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware CORS - CONFIGURAÇÃO CORRIGIDA E EXPANDIDA
+// ========== CORREÇÃO CORS - DEVE VIR ANTES DE QUALQUER MIDDLEWARE ==========
 app.use(cors({
     origin: [
         'https://garagem67.vercel.app',
         'https://entregador67.vercel.app',
-        'https://www.garagem67.vercel.app',
+        'https://www.garagem67.vercel.app', 
         'https://www.entregador67.vercel.app',
         'http://localhost:8000',
         'http://localhost:3000',
         'http://localhost:3001',
-        'http://localhost:8080'
+        'http://localhost:8080',
+        'https://entregador67.vercel.app' // ADICIONE ESTA LINHA
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'x-requested-with'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
     preflightContinue: false,
     optionsSuccessStatus: 204
 }));
 
-// Middleware para lidar com preflight requests
+// Middleware para lidar com preflight requests explicitamente
 app.options('*', cors());
+
+// ========== MIDDLEWARE PARA LOG DE REQUISIÇÕES CORS ==========
+app.use((req, res, next) => {
+    console.log('🌐 CORS - Origem:', req.headers.origin);
+    console.log('🌐 CORS - Método:', req.method);
+    console.log('🌐 CORS - Rota:', req.path);
+    next();
+});
 
 // Middleware para parse JSON - DEVE VIR DEPOIS DO CORS
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// ... resto do seu código permanece igual
 
 // Inicialização do Firebase
 let db = null;
@@ -1221,3 +1233,127 @@ function criarDadosExemplo() {
 
   console.log('📋 Dados de exemplo criados para demonstração');
 }
+
+// ========== ROTAS ADMIN ==========
+
+// Rota para criar admin (executar pelo console)
+app.post('/admin/create-admin', async (req, res) => {
+    try {
+        console.log('👑 Recebendo requisição para criar admin...');
+        
+        const { uid, email, name } = req.body;
+
+        if (!uid || !email) {
+            return res.status(400).json({
+                success: false,
+                message: 'UID e email são obrigatórios'
+            });
+        }
+
+        const adminData = {
+            email: email,
+            name: name || 'Administrador',
+            role: 'admin',
+            profileCompleted: true,
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString()
+        };
+
+        console.log('👑 Criando admin para:', email);
+
+        let result;
+
+        if (firebaseInitialized) {
+            const userRef = db.collection('users').doc(uid);
+            await userRef.set(adminData, { merge: true });
+            result = { id: uid, ...adminData };
+            console.log('✅ Admin criado no Firebase');
+        } else {
+            const existingUser = users.find(u => u.id === uid);
+            if (existingUser) {
+                Object.assign(existingUser, adminData);
+                result = existingUser;
+            } else {
+                const newUser = { id: uid, ...adminData };
+                users.push(newUser);
+                result = newUser;
+            }
+            console.log('✅ Admin criado em memória');
+        }
+
+        res.json({
+            success: true,
+            message: '✅ Admin criado com sucesso!',
+            user: result
+        });
+
+    } catch (error) {
+        console.error('❌ Erro ao criar admin:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro interno do servidor: ' + error.message
+        });
+    }
+});
+
+// Rota para promover usuário a admin (para admins existentes)
+app.post('/admin/promote-user', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email é obrigatório'
+            });
+        }
+
+        console.log('👑 Promovendo usuário para admin:', email);
+
+        let userUpdated = false;
+
+        if (firebaseInitialized) {
+            // Buscar usuário pelo email
+            const usersSnapshot = await db.collection('users')
+                .where('email', '==', email)
+                .get();
+
+            if (!usersSnapshot.empty) {
+                const userDoc = usersSnapshot.docs[0];
+                await userDoc.ref.update({
+                    role: 'admin',
+                    updatedAt: new Date().toISOString()
+                });
+                userUpdated = true;
+                console.log('✅ Usuário promovido no Firebase');
+            }
+        } else {
+            const user = users.find(u => u.email === email);
+            if (user) {
+                user.role = 'admin';
+                userUpdated = true;
+                console.log('✅ Usuário promovido em memória');
+            }
+        }
+
+        if (userUpdated) {
+            res.json({
+                success: true,
+                message: '✅ Usuário promovido a administrador com sucesso!',
+                user: { email, role: 'admin' }
+            });
+        } else {
+            res.status(404).json({
+                success: false,
+                message: 'Usuário não encontrado'
+            });
+        }
+
+    } catch (error) {
+        console.error('❌ Erro ao promover usuário:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro interno do servidor'
+        });
+    }
+});

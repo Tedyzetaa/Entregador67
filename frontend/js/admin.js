@@ -1,19 +1,18 @@
-// admin.js - Sistema completo do painel administrativo
-const BACKEND_URL = 'https://entregador67-production.up.railway.app';
+// admin.js - Sistema completo do painel administrativo corrigido
+
+// Verificar se BACKEND_URL já foi definido
+if (typeof window.BACKEND_URL === 'undefined') {
+    window.BACKEND_URL = 'https://entregador67-production.up.railway.app';
+}
 
 let currentUser = null;
 let userToken = null;
 let allPedidos = [];
 let filteredPedidos = [];
 
-// Elementos DOM
-const formCriarPedido = document.getElementById('form-criar-pedido');
-const listaPedidosAdmin = document.getElementById('lista-pedidos-admin');
-const listaEntregadores = document.getElementById('lista-entregadores');
-const pedidosFiltros = document.querySelector('.pedidos-filtros');
-
 // Inicializar admin
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('👑 Inicializando painel administrativo...');
     initAdmin();
 });
 
@@ -44,11 +43,13 @@ async function initAdmin() {
 // Configurar event listeners
 function setupEventListeners() {
     // Formulário criar pedido
+    const formCriarPedido = document.getElementById('form-criar-pedido');
     if (formCriarPedido) {
         formCriarPedido.addEventListener('submit', criarPedido);
     }
 
     // Filtros de pedidos
+    const pedidosFiltros = document.querySelector('.pedidos-filtros');
     if (pedidosFiltros) {
         pedidosFiltros.addEventListener('click', (e) => {
             if (e.target.classList.contains('btn-filter')) {
@@ -96,7 +97,7 @@ function setupSmoothNavigation() {
 // Verificar se usuário é admin
 async function verificarAdmin() {
     try {
-        const response = await fetch(`${BACKEND_URL}/entregadores`, {
+        const response = await fetch(`${window.BACKEND_URL}/entregadores`, {
             headers: {
                 'Authorization': `Bearer ${userToken}`
             }
@@ -130,7 +131,7 @@ function showUserInfo(user) {
 async function criarPedido(e) {
     e.preventDefault();
     
-    const formData = new FormData(formCriarPedido);
+    const formData = new FormData(e.target);
     const dados = {
         description: formData.get('descricao'),
         quantity: parseInt(formData.get('quantidade'))
@@ -153,7 +154,7 @@ async function criarPedido(e) {
         btn.disabled = true;
         btn.textContent = 'CRIANDO...';
 
-        const response = await fetch(`${BACKEND_URL}/pedidos`, {
+        const response = await fetch(`${window.BACKEND_URL}/pedidos`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -166,7 +167,7 @@ async function criarPedido(e) {
 
         if (result.success) {
             showNotification('✅ Pedido criado com sucesso!', 'success');
-            formCriarPedido.reset();
+            e.target.reset();
             await carregarPedidosAdmin();
         } else {
             throw new Error(result.message);
@@ -187,7 +188,7 @@ async function carregarPedidosAdmin() {
     try {
         showLoadingState('lista-pedidos-admin', '🔄 Carregando pedidos...');
 
-        const response = await fetch(`${BACKEND_URL}/pedidos`, {
+        const response = await fetch(`${window.BACKEND_URL}/pedidos`, {
             headers: {
                 'Authorization': `Bearer ${userToken}`
             }
@@ -235,6 +236,7 @@ function filtrarPedidos(status) {
 
 // Exibir pedidos para admin
 function exibirPedidosAdmin(pedidos) {
+    const listaPedidosAdmin = document.getElementById('lista-pedidos-admin');
     if (!listaPedidosAdmin) return;
     
     if (pedidos.length === 0) {
@@ -361,7 +363,7 @@ async function carregarEntregadores() {
     try {
         showLoadingState('lista-entregadores', '🔄 Carregando entregadores...');
 
-        const response = await fetch(`${BACKEND_URL}/entregadores`, {
+        const response = await fetch(`${window.BACKEND_URL}/entregadores`, {
             headers: {
                 'Authorization': `Bearer ${userToken}`
             }
@@ -386,6 +388,7 @@ async function carregarEntregadores() {
 
 // Exibir entregadores
 function exibirEntregadores(entregadores) {
+    const listaEntregadores = document.getElementById('lista-entregadores');
     if (!listaEntregadores) return;
     
     if (!entregadores || entregadores.length === 0) {
@@ -500,7 +503,7 @@ async function excluirPedido(pedidoId) {
     if (!confirm('Tem certeza que deseja excluir este pedido? Esta ação não pode ser desfeita.')) return;
     
     try {
-        const response = await fetch(`${BACKEND_URL}/pedidos/${pedidoId}`, {
+        const response = await fetch(`${window.BACKEND_URL}/pedidos/${pedidoId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${userToken}`
@@ -520,13 +523,12 @@ async function excluirPedido(pedidoId) {
 }
 
 async function atribuirEntregador(pedidoId) {
-    // Implementar lógica de atribuição de entregador
     showNotification('👤 Funcionalidade de atribuição em desenvolvimento', 'info');
 }
 
 async function atualizarStatusPedido(pedidoId, novoStatus) {
     try {
-        const response = await fetch(`${BACKEND_URL}/pedidos/${pedidoId}/status`, {
+        const response = await fetch(`${window.BACKEND_URL}/pedidos/${pedidoId}/status`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
@@ -554,7 +556,7 @@ async function aprovarEntregador(entregadorId) {
     if (!confirm('Deseja aprovar este entregador?')) return;
     
     try {
-        const response = await fetch(`${BACKEND_URL}/entregadores/${entregadorId}/aprovar`, {
+        const response = await fetch(`${window.BACKEND_URL}/entregadores/${entregadorId}/aprovar`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
@@ -579,7 +581,7 @@ async function rejeitarEntregador(entregadorId) {
     if (!confirm('Deseja rejeitar este entregador?')) return;
     
     try {
-        const response = await fetch(`${BACKEND_URL}/entregadores/${entregadorId}/aprovar`, {
+        const response = await fetch(`${window.BACKEND_URL}/entregadores/${entregadorId}/aprovar`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
@@ -601,12 +603,10 @@ async function rejeitarEntregador(entregadorId) {
 }
 
 async function suspenderEntregador(entregadorId) {
-    // Implementar suspensão de entregador
     showNotification('⏸️ Funcionalidade de suspensão em desenvolvimento', 'info');
 }
 
 async function reativarEntregador(entregadorId) {
-    // Implementar reativação de entregador
     showNotification('🔄 Funcionalidade de reativação em desenvolvimento', 'info');
 }
 
@@ -676,13 +676,11 @@ function formatarDisponibilidade(disponibilidade) {
 }
 
 function calcularPedidosEntregador(userId) {
-    // Implementar cálculo de pedidos por entregador
-    return Math.floor(Math.random() * 20); // Placeholder
+    return Math.floor(Math.random() * 20);
 }
 
 function calcularTaxaEntrega(userId) {
-    // Implementar cálculo de taxa de entrega
-    return Math.floor(Math.random() * 30) + 70; // Placeholder
+    return Math.floor(Math.random() * 30) + 70;
 }
 
 function verDetalhesCompletos(pedidoId) {
@@ -725,7 +723,6 @@ function verDetalhesCompletos(pedidoId) {
 
 function verDetalhesEntregador(entregadorId) {
     showNotification('👤 Visualizando detalhes do entregador', 'info');
-    // Implementar modal de detalhes do entregador
 }
 
 function entrarEmContato(telefone) {
@@ -852,7 +849,6 @@ function showNotification(message, type = 'info') {
 
 // Auto-atualização
 function iniciarAutoAtualizacao() {
-    // Atualizar a cada 30 segundos
     setInterval(async () => {
         await carregarPedidosAdmin();
         await carregarEntregadores();
@@ -867,7 +863,7 @@ window.createAdmin = function() {
         return;
     }
     
-    fetch(`${BACKEND_URL}/admin/create-admin`, {
+    fetch(`${window.BACKEND_URL}/admin/create-admin`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -907,144 +903,3 @@ window.verDetalhesCompletos = verDetalhesCompletos;
 window.verDetalhesEntregador = verDetalhesEntregador;
 window.entrarEmContato = entrarEmContato;
 window.copiarParaAreaTransferencia = copiarParaAreaTransferencia;
-
-// Sistema de promoção para admin (para super admins)
-class AdminPromotionSystem {
-    constructor() {
-        this.setupPromotionUI();
-    }
-
-    setupPromotionUI() {
-        // Adicionar botão de promoção no painel admin
-        const adminSection = document.querySelector('#entregadores');
-        if (adminSection) {
-            const promoteButton = document.createElement('button');
-            promoteButton.className = 'btn-primary';
-            promoteButton.innerHTML = '👑 Promover para Admin';
-            promoteButton.style.marginBottom = '20px';
-            promoteButton.onclick = () => this.showPromotionModal();
-            
-            adminSection.querySelector('.section-header').appendChild(promoteButton);
-        }
-    }
-
-    showPromotionModal() {
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-content" style="max-width: 500px;">
-                <span class="close">&times;</span>
-                <h2>👑 Promover Usuário para Admin</h2>
-                <div class="form-group">
-                    <label for="admin-email">Email do Usuário:</label>
-                    <input type="email" id="admin-email" placeholder="Digite o email do usuário">
-                </div>
-                <div class="modal-actions">
-                    <button class="btn-primary" onclick="window.adminPromotion.promoteUser()">Promover</button>
-                    <button class="btn-secondary" onclick="this.closest('.modal').remove()">Cancelar</button>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-
-        // Fechar modal
-        modal.querySelector('.close').addEventListener('click', () => modal.remove());
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.remove();
-        });
-    }
-
-    async promoteUser() {
-        const emailInput = document.getElementById('admin-email');
-        const email = emailInput.value.trim();
-
-        if (!email) {
-            alert('❌ Por favor, digite um email válido.');
-            return;
-        }
-
-        try {
-            const user = firebase.auth().currentUser;
-            const token = await user.getIdToken();
-
-            const response = await fetch(`${window.BACKEND_URL}/admin/promote-user`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ email })
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                alert('✅ Usuário promovido a administrador com sucesso!');
-                document.querySelector('.modal').remove();
-            } else {
-                throw new Error(result.message);
-            }
-        } catch (error) {
-            console.error('❌ Erro ao promover usuário:', error);
-            alert('❌ Erro ao promover usuário: ' + error.message);
-        }
-    }
-}
-
-// Adicione esta rota ao seu backend:
-app.post('/admin/promote-user', authenticate, isAdmin, async (req, res) => {
-    try {
-        const { email } = req.body;
-
-        if (!email) {
-            return res.status(400).json({
-                success: false,
-                message: 'Email é obrigatório'
-            });
-        }
-
-        // Buscar usuário pelo email
-        let userDoc;
-        if (firebaseInitialized) {
-            const usersSnapshot = await db.collection('users')
-                .where('email', '==', email)
-                .get();
-
-            if (usersSnapshot.empty) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Usuário não encontrado'
-                });
-            }
-
-            userDoc = usersSnapshot.docs[0];
-            await userDoc.ref.update({
-                role: 'admin',
-                updatedAt: new Date().toISOString()
-            });
-        } else {
-            const user = users.find(u => u.email === email);
-            if (!user) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Usuário não encontrado'
-                });
-            }
-            user.role = 'admin';
-        }
-
-        res.json({
-            success: true,
-            message: '✅ Usuário promovido a administrador!',
-            user: { email, role: 'admin' }
-        });
-
-    } catch (error) {
-        console.error('❌ Erro ao promover usuário:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erro interno do servidor'
-        });
-    }
-});

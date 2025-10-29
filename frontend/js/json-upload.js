@@ -1,165 +1,224 @@
+// json-upload.js - Sistema de upload de arquivos JSON corrigido
 class JSONUploadManager {
     constructor() {
-        this.initializeEventListeners();
+        this.uploadedFiles = [];
+        this.init();
+    }
+
+    init() {
         console.log('📁 Inicializando JSONUploadManager...');
+        this.setupEventListeners();
     }
 
-    initializeEventListeners() {
-        const dropArea = document.getElementById('drop-area');
-        const fileInput = document.getElementById('file-input');
-        const selectButton = document.getElementById('select-files');
+    setupEventListeners() {
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('json-file-input');
 
-        // Event listeners para drag and drop
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, this.preventDefaults, false);
-        });
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropArea.addEventListener(eventName, () => this.highlight(dropArea), false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, () => this.unhighlight(dropArea), false);
-        });
-
-        dropArea.addEventListener('drop', (e) => this.handleDrop(e), false);
-
-        // Event listeners para seleção de arquivos
-        selectButton.addEventListener('click', () => fileInput.click(), false);
-        fileInput.addEventListener('change', (e) => this.handleFiles(e.target.files), false);
-    }
-
-    preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    highlight(element) {
-        element.classList.add('highlight');
-    }
-
-    unhighlight(element) {
-        element.classList.remove('highlight');
-    }
-
-    handleDrop(e) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        this.handleFiles(files);
-    }
-
-    handleFiles(files) {
-        if (!files.length) return;
-
-        console.log(`📂 ${files.length} arquivo(s) selecionado(s)`);
-
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            this.processFile(file);
-        }
-    }
-
-    async processFile(file) {
-        console.log('🔄 Processando arquivo:', file.name, file);
-
-        // Verificar se é um arquivo JSON
-        if (!file.name.endsWith('.json')) {
-            this.showError(file.name, 'Arquivo não é um JSON');
+        if (!uploadArea || !fileInput) {
+            console.warn('⚠️ Elementos de upload não encontrados');
             return;
         }
 
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            this.handleFiles(files);
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            this.handleFiles(e.target.files);
+        });
+    }
+
+    handleFiles(files) {
+        if (files.length === 0) return;
+
+        console.log(`📂 ${files.length} arquivo(s) selecionado(s)`);
+        
+        this.updateUploadStatus(`Processando ${files.length} arquivo(s)...`);
+
+        Array.from(files).forEach(file => {
+            if (file.type === 'application/json' || file.name.endsWith('.json')) {
+                this.processFile(file);
+            } else {
+                this.showError(`${file.name} não é um arquivo JSON válido`);
+            }
+        });
+    }
+
+    async processFile(file) {
         try {
-            // Primeiro, validar o JSON
-            const jsonContent = await this.validateJSON(file);
+            const fileContent = await this.readFileContent(file);
+            const orderData = JSON.parse(fileContent);
             
-            // Se for válido, enviar para o backend
-            await this.uploadToBackend(file, jsonContent);
-            
+            console.log(`🔄 Processando arquivo: ${file.name}`, orderData);
+
+            // Validar estrutura básica
+            if (!this.validateJSONStructure(orderData)) {
+                throw new Error('Estrutura do JSON inválida');
+            }
+
+            await this.sendToBackend(file.name, orderData);
+
         } catch (error) {
-            console.error('❌ Erro ao processar arquivo:', error);
-            this.showError(file.name, error.message);
+            console.error(`❌ Erro ao processar ${file.name}:`, error);
+            this.showError(`Erro em ${file.name}: ${error.message}`);
         }
     }
 
-    async validateJSON(file) {
+    readFileContent(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-
-            reader.onload = (e) => {
-                try {
-                    const json = JSON.parse(e.target.result);
-                    
-                    // Validar estrutura básica do JSON
-                    if (!json.order_id) {
-                        throw new Error('JSON não possui order_id');
-                    }
-                    if (!json.customer) {
-                        throw new Error('JSON não possui customer');
-                    }
-                    if (!json.items || !Array.isArray(json.items)) {
-                        throw new Error('JSON não possui items array');
-                    }
-                    
-                    resolve(json);
-                } catch (error) {
-                    reject(new Error(`JSON inválido: ${error.message}`));
-                }
-            };
-
-            reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = (error) => reject(error);
             reader.readAsText(file);
         });
     }
 
-    async uploadToBackend(file, jsonContent) {
+    validateJSONStructure(data) {
+        return data && 
+               data.customer && 
+               data.items && 
+               Array.isArray(data.items) && 
+               data.items.length > 0 &&
+               data.customer.name &&
+               data.customer.phone;
+    }
+
+    async sendToBackend(fileName, orderData) {
         try {
-            const formData = new FormData();
-            formData.append('jsonFile', file);
-            formData.append('jsonData', JSON.stringify(jsonContent));
-
-            const response = await fetch('/api/upload-json', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            const user = firebase.auth().currentUser;
+            if (!user) {
+                throw new Error('Usuário não autenticado');
             }
 
+            const token = await user.getIdToken();
+
+            const response = await fetch(`${window.BACKEND_URL}/api/upload-json`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    fileName: fileName,
+                    fileContent: orderData
+                })
+            });
+
             const result = await response.json();
-            this.showSuccess(file.name);
-            console.log('✅ Arquivo processado com sucesso:', result);
+
+            if (result.success) {
+                console.log('✅ Arquivo processado com sucesso:', result);
+                this.showSuccess(fileName, result.order);
+                this.addToUploadedFilesList(fileName, result.order, 'success');
+                
+                // Atualizar lista de pedidos
+                if (window.carregarPedidosAdmin) {
+                    setTimeout(() => window.carregarPedidosAdmin(), 1000);
+                }
+            } else {
+                throw new Error(result.message);
+            }
 
         } catch (error) {
             console.error('❌ Erro ao enviar para backend:', error);
-            throw new Error(`Falha no upload: ${error.message}`);
+            this.showError(`Erro ao enviar ${fileName}: ${error.message}`);
+            this.addToUploadedFilesList(fileName, null, 'error', error.message);
         }
     }
 
-    showError(fileName, message) {
-        this.updateStatus(fileName, `❌ Erro: ${message}`, 'error');
+    showSuccess(fileName, order) {
+        this.updateUploadStatus(`✅ ${fileName} importado com sucesso!`);
+        
+        // Notificação visual
+        this.showNotification(`✅ Pedido de ${order.customer} importado! ID: ${order.internal_id}`, 'success');
     }
 
-    showSuccess(fileName) {
-        this.updateStatus(fileName, '✅ Importado com sucesso!', 'success');
+    showError(message) {
+        this.updateUploadStatus(`❌ ${message}`);
+        this.showNotification(message, 'error');
     }
 
-    updateStatus(fileName, message, type) {
-        // Encontrar ou criar um elemento para mostrar o status
-        let statusElement = document.getElementById(`status-${fileName}`);
-        if (!statusElement) {
-            statusElement = document.createElement('div');
-            statusElement.id = `status-${fileName}`;
-            statusElement.className = 'file-status';
-            document.getElementById('drop-area').appendChild(statusElement);
+    updateUploadStatus(message) {
+        const statusElement = document.getElementById('upload-status');
+        if (statusElement) {
+            statusElement.textContent = message;
+            statusElement.className = message.includes('✅') ? 'status-success' : 
+                                    message.includes('❌') ? 'status-error' : 'status-info';
+        }
+    }
+
+    addToUploadedFilesList(fileName, order, status, errorMessage = '') {
+        const container = document.getElementById('uploaded-files');
+        if (!container) return;
+
+        const fileElement = document.createElement('div');
+        fileElement.className = `uploaded-file ${status}`;
+        
+        if (status === 'success') {
+            fileElement.innerHTML = `
+                <div class="file-header">
+                    <span class="file-name">✅ ${fileName}</span>
+                    <span class="file-status success">IMPORTADO</span>
+                </div>
+                <div class="file-details">
+                    <p><strong>Cliente:</strong> ${order.customer}</p>
+                    <p><strong>ID do Pedido:</strong> ${order.internal_id}</p>
+                    <p><strong>Total:</strong> R$ ${parseFloat(order.total).toFixed(2)}</p>
+                    <p><strong>Itens:</strong> ${order.items} item(s)</p>
+                    <p><strong>Status:</strong> <span class="status-pendente">Pendente</span></p>
+                </div>
+            `;
+        } else {
+            fileElement.innerHTML = `
+                <div class="file-header">
+                    <span class="file-name">❌ ${fileName}</span>
+                    <span class="file-status error">ERRO</span>
+                </div>
+                <div class="file-details">
+                    <p><strong>Erro:</strong> ${errorMessage}</p>
+                </div>
+            `;
         }
 
-        statusElement.textContent = `${fileName}: ${message}`;
-        statusElement.className = `file-status ${type}`;
+        container.insertBefore(fileElement, container.firstChild);
+    }
+
+    showNotification(message, type = 'info') {
+        // Criar elemento de notificação
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.innerHTML = `
+            <span>${message}</span>
+            <button class="notification-close" onclick="this.parentElement.remove()">×</button>
+        `;
+
+        // Adicionar ao corpo
+        document.body.appendChild(notification);
+
+        // Remover após 5 segundos
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
     }
 }
 
-// Inicializar quando DOM estiver pronto
-document.addEventListener('DOMContentLoaded', () => {
-    new JSONUploadManager();
+// Inicializar quando o DOM estiver carregado
+document.addEventListener('DOMContentLoaded', function() {
+    window.jsonUploadManager = new JSONUploadManager();
 });
